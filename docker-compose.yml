@@ -1,59 +1,243 @@
-version: '3'
+version: '3.8'
 
 services:
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    container_name: backend
+  # ─── Infrastructure ───────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: viva-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-viva_vtu}
+      MYSQL_USER: ${DB_USERNAME:-viva}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-    - 8000:8000
+      - "3306:3306"
     volumes:
-      - ./api:/var/www/html
+      - mysql_data:/var/lib/mysql
+      - ./backend/shared/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - app-network
-    depends_on:
-      - mysql
+      - viva-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: viva-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-secret}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - viva-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Microservices ────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: viva-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - BILLING_SERVICE_URL=http://billing-service:8000
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX=100
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3002}
+    volumes:
+      - ./backend/api-gateway/src:/app/src
+      - gateway_logs:/app/logs
+    networks:
+      - viva-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: viva-auth
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3001
+      - DATABASE_URL=mysql://${DB_USERNAME:-viva}:${DB_PASSWORD:-secret}@mysql:3306/${DB_DATABASE:-viva_vtu}_auth
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - MAIL_HOST=${MAIL_HOST:-mailhog}
+      - MAIL_PORT=${MAIL_PORT:-1025}
+      - MAIL_USER=${MAIL_USER:-}
+      - MAIL_PASS=${MAIL_PASS:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@vivavtu.com}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3002}
+    volumes:
+      - ./backend/auth-service/src:/app/src
+      - auth_logs:/app/logs
+    networks:
+      - viva-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  billing-service:
+    build:
+      context: ./backend/laravel-service
+      dockerfile: Dockerfile
+    container_name: viva-billing
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_KEY=${APP_KEY}
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-viva_vtu}_billing
+      - DB_USERNAME=${DB_USERNAME:-viva}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - VTTPASS_API_KEY=${VTTPASS_API_KEY}
+      - VTTPASS_SECRET_KEY=${VTTPASS_SECRET_KEY}
+      - VTTPASS_USERNAME=${VTTPASS_USERNAME}
+      - VTTPASS_PASSWORD=${VTTPASS_PASSWORD}
+      - VTTPASS_BASE_URL=${VTTPASS_BASE_URL:-https://vtpass.com/api}
+      - PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}
+      - PAYSTACK_PUBLIC_KEY=${PAYSTACK_PUBLIC_KEY}
+      - FLUTTERWAVE_SECRET_KEY=${FLUTTERWAVE_SECRET_KEY}
+      - FLUTTERWAVE_PUBLIC_KEY=${FLUTTERWAVE_PUBLIC_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./backend/laravel-service/app:/var/www/html/app
+      - ./backend/laravel-service/routes:/var/www/html/routes
+      - billing_logs:/var/www/html/storage/logs
+    networks:
+      - viva-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  analytics-service:
+    build:
+      context: ./backend/django-service
+      dockerfile: Dockerfile
+    container_name: viva-analytics
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-change-me-in-production}
+      - DEBUG=${DEBUG:-True}
+      - ALLOWED_HOSTS=*
+      - DB_NAME=${DB_DATABASE:-viva_vtu}_analytics
+      - DB_USER=${DB_USERNAME:-viva}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-secret}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-secret}@redis:6379/1
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-viva-internal-secret}
+    volumes:
+      - ./backend/django-service:/app
+      - analytics_logs:/app/logs
+      - analytics_media:/app/media
+    networks:
+      - viva-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ─── Frontend ─────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend
+    container_name: viva-frontend
+    restart: unless-stopped
     ports:
-      - 3000:3000
-    volumes:
-      - ./frontend:/usr/src/app
-    networks:
-      - app-network
-
-  apache:
-  image: httpd:latest
-  container_name: apache
-  ports:
-    - 80:80
-  volumes:
-    - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
-  depends_on:
-    - app
-    - mysql
-  networks:
-    - app-network
-
-  mysql:
-    image: mariadb:10.4
-    restart: always
+      - "3002:3000"
     environment:
-      MYSQL_DATABASE: vtu
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 
-      MYSQL_ROOT_PASSWORD: 
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_PAYSTACK_KEY=${NEXT_PUBLIC_PAYSTACK_KEY:-pk_test_...}
+      - NEXT_PUBLIC_FLUTTERWAVE_KEY=${NEXT_PUBLIC_FLUTTERWAVE_KEY:-FLWSECK_TEST-...}
     volumes:
-      - ./api/storage/db_data:/var/lib/mysql
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     networks:
-      - app-network
+      - viva-network
+    depends_on:
+      - api-gateway
 
+  # ─── Development Tools ────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog
+    container_name: viva-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - viva-network
+
+# ─── Volumes ────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  gateway_logs:
+    driver: local
+  auth_logs:
+    driver: local
+  billing_logs:
+    driver: local
+  analytics_logs:
+    driver: local
+  analytics_media:
+    driver: local
+
+# ─── Network ────────────────────────────────────────────────────────
 networks:
-  app-network:
+  viva-network:
     driver: bridge
-

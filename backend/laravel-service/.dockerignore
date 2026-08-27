@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+docker-compose.yml
+docker-compose.*.yml
+README.md
+.phpunit.result.cache
+node_modules
+tests
+.vscode
+.idea
+.fleet
+*.md
+storage/logs/*

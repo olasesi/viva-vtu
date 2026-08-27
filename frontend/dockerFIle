@@ -1,19 +1,25 @@
-FROM node:20-alpine
+FROM node:20-alpine AS base
 
-# Set working directory
-WORKDIR /usr/src/app
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Copy frontend files to the container
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Install dependencies using npm
-RUN npm install
-
-# Build the frontend
 RUN npm run build
 
-# Expose port (adjust if necessary)
-EXPOSE 8080
-
-# Start the frontend server
-CMD ["npm", "run", "serve"]
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+USER nextjs
+EXPOSE 3000
+ENV PORT 3000
+CMD ["npm", "start"]
