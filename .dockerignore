@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.gitignore
+README.md
+.env
+.env.local
+.dockerignore
+Dockerfile
+
+# backend microservices (separate builds)
+api/
+
+# root tooling
+Makefile
+docker-compose.yml
+docker-compose.prod.yml

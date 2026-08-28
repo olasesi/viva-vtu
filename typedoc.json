@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["src/**/*.ts", "src/**/*.tsx"],
+  "out": "docs",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "theme": "default",
+  "name": "Viva VTU Frontend"
+}

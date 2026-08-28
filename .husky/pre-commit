@@ -1,0 +1,5 @@
+#!/bin/sh
+# Pre-commit hook — run lint-staged (format + lint) on staged files.
+. "$(dirname "$0")/_/husky.sh"
+
+npx lint-staged
