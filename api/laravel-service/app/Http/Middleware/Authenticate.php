@@ -12,7 +12,7 @@ class Authenticate
     {
         $token = $request->bearerToken();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
 

@@ -5,17 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\PaymentLog;
 use App\Models\Transaction;
 use App\Models\Wallet;
-use App\Services\PaystackService;
 use App\Services\FlutterwaveService;
+use App\Services\PaystackService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class WebhookController extends Controller
 {
     protected PaystackService $paystackService;
+
     protected FlutterwaveService $flutterwaveService;
+
     protected WalletService $walletService;
 
     public function __construct(
@@ -45,11 +46,11 @@ class WebhookController extends Controller
 
         $verificationResponse = $this->paystackService->verifyWebhookSignature($payload, $signature);
 
-        if (!$verificationResponse) {
+        if (! $verificationResponse) {
             return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
         }
 
-        if (!isset($payload['data'])) {
+        if (! isset($payload['data'])) {
             return response()->json(['success' => true, 'message' => 'No data'], 200);
         }
 
@@ -64,7 +65,7 @@ class WebhookController extends Controller
             if ($userId) {
                 $existingTransaction = Transaction::where('reference', $reference)->first();
 
-                if (!$existingTransaction) {
+                if (! $existingTransaction) {
                     $wallet = Wallet::where('user_id', $userId)->first();
 
                     if ($wallet) {
@@ -131,11 +132,11 @@ class WebhookController extends Controller
 
         $isValid = $this->flutterwaveService->verifyWebhookSignature($payload, $signature);
 
-        if (!$isValid) {
+        if (! $isValid) {
             return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
         }
 
-        if (!isset($payload['data'])) {
+        if (! isset($payload['data'])) {
             return response()->json(['success' => true, 'message' => 'No data'], 200);
         }
 
@@ -150,7 +151,7 @@ class WebhookController extends Controller
             if ($userId) {
                 $existingTransaction = Transaction::where('reference', $txRef)->first();
 
-                if (!$existingTransaction) {
+                if (! $existingTransaction) {
                     $wallet = Wallet::where('user_id', $userId)->first();
 
                     if ($wallet) {

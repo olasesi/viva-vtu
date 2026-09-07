@@ -38,7 +38,7 @@ class Wallet extends Model
                 ->lockForUpdate()
                 ->first();
 
-            if (!$locked) {
+            if (! $locked) {
                 return false;
             }
 
@@ -74,7 +74,7 @@ class Wallet extends Model
                 ->lockForUpdate()
                 ->first();
 
-            if (!$locked) {
+            if (! $locked) {
                 return false;
             }
 

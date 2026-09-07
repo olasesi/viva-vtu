@@ -20,15 +20,21 @@ class Transaction extends Model
         'fee',
         'status',
         'provider_reference',
+        'provider',
+        'attempts',
+        'last_error',
         'metadata',
         'completed_at',
+        'reversed_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'fee' => 'decimal:2',
         'metadata' => 'json',
+        'attempts' => 'integer',
         'completed_at' => 'datetime',
+        'reversed_at' => 'datetime',
     ];
 
     public function user()
@@ -73,6 +79,6 @@ class Transaction extends Model
 
     public function getFormattedAmountAttribute(): string
     {
-        return '₦' . number_format($this->amount, 2);
+        return '₦'.number_format($this->amount, 2);
     }
 }

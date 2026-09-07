@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\WalletController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/webhook/paystack', [WebhookController::class, 'handlePaystack']);
 Route::post('/webhook/flutterwave', [WebhookController::class, 'handleFlutterwave']);
@@ -30,4 +30,5 @@ Route::middleware('jwt.verify')->group(function () {
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('/transactions/{id}/status', [TransactionController::class, 'status']);
 });

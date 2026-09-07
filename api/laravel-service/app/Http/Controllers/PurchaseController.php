@@ -2,24 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
-use App\Models\Wallet;
-use App\Services\VtpassService;
-use App\Services\WalletService;
+use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class PurchaseController extends Controller
 {
-    protected VtpassService $vtpassService;
-    protected WalletService $walletService;
-
-    public function __construct(VtpassService $vtpassService, WalletService $walletService)
-    {
-        $this->vtpassService = $vtpassService;
-        $this->walletService = $walletService;
-    }
+    public function __construct(protected TransactionService $transactionService) {}
 
     public function buyAirtime(Request $request): JsonResponse
     {
@@ -29,92 +18,14 @@ class PurchaseController extends Controller
             'network' => 'required|string',
         ]);
 
-        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
         }
 
-        $reference = 'AIR-' . strtoupper(Str::random(12));
-        $wallet = Wallet::where('user_id', $userId)->first();
+        $result = $this->transactionService->execute('airtime', $userId, $validated);
 
-        if (!$wallet || $wallet->balance < $validated['amount']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Insufficient wallet balance',
-            ], 400);
-        }
-
-        $transaction = Transaction::create([
-            'user_id' => $userId,
-            'wallet_id' => $wallet->id,
-            'type' => 'debit',
-            'category' => 'airtime',
-            'reference' => $reference,
-            'description' => "Airtime purchase for {$validated['phone_number']}",
-            'amount' => $validated['amount'],
-            'status' => 'pending',
-            'metadata' => $validated,
-        ]);
-
-        $debitResult = $this->walletService->debit(
-            $userId,
-            $validated['amount'],
-            $reference,
-            "Airtime purchase for {$validated['phone_number']}"
-        );
-
-        if (!$debitResult) {
-            $transaction->update(['status' => 'failed']);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to debit wallet',
-            ], 400);
-        }
-
-        $vtpassResponse = $this->vtpassService->purchaseAirtime([
-            'phone_number' => $validated['phone_number'],
-            'amount' => $validated['amount'],
-            'network' => $validated['network'],
-            'request_id' => $reference,
-        ]);
-
-        if (isset($vtpassResponse['code']) && $vtpassResponse['code'] === '000') {
-            $transaction->update([
-                'status' => 'successful',
-                'provider_reference' => $vtpassResponse['content']['transactions']['transactionId'] ?? null,
-                'completed_at' => now(),
-                'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Airtime purchased successfully',
-                'data' => [
-                    'reference' => $reference,
-                    'transaction_id' => $transaction->id,
-                    'amount' => $validated['amount'],
-                    'phone_number' => $validated['phone_number'],
-                    'network' => $validated['network'],
-                ],
-            ]);
-        }
-
-        $this->walletService->credit(
-            $userId,
-            $validated['amount'],
-            'REV-' . $reference,
-            "Reversal for failed airtime purchase {$reference}"
-        );
-
-        $transaction->update([
-            'status' => 'failed',
-            'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $vtpassResponse['response_message'] ?? 'Airtime purchase failed',
-        ], 400);
+        return $this->mapResult($result);
     }
 
     public function buyData(Request $request): JsonResponse
@@ -126,94 +37,14 @@ class PurchaseController extends Controller
             'plan' => 'required|string',
         ]);
 
-        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
         }
 
-        $reference = 'DAT-' . strtoupper(Str::random(12));
-        $wallet = Wallet::where('user_id', $userId)->first();
+        $result = $this->transactionService->execute('data', $userId, $validated);
 
-        if (!$wallet || $wallet->balance < $validated['amount']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Insufficient wallet balance',
-            ], 400);
-        }
-
-        $transaction = Transaction::create([
-            'user_id' => $userId,
-            'wallet_id' => $wallet->id,
-            'type' => 'debit',
-            'category' => 'data',
-            'reference' => $reference,
-            'description' => "Data purchase for {$validated['phone_number']}",
-            'amount' => $validated['amount'],
-            'status' => 'pending',
-            'metadata' => $validated,
-        ]);
-
-        $debitResult = $this->walletService->debit(
-            $userId,
-            $validated['amount'],
-            $reference,
-            "Data purchase for {$validated['phone_number']}"
-        );
-
-        if (!$debitResult) {
-            $transaction->update(['status' => 'failed']);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to debit wallet',
-            ], 400);
-        }
-
-        $vtpassResponse = $this->vtpassService->purchaseData([
-            'phone_number' => $validated['phone_number'],
-            'amount' => $validated['amount'],
-            'network' => $validated['network'],
-            'plan' => $validated['plan'],
-            'request_id' => $reference,
-        ]);
-
-        if (isset($vtpassResponse['code']) && $vtpassResponse['code'] === '000') {
-            $transaction->update([
-                'status' => 'successful',
-                'provider_reference' => $vtpassResponse['content']['transactions']['transactionId'] ?? null,
-                'completed_at' => now(),
-                'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data purchased successfully',
-                'data' => [
-                    'reference' => $reference,
-                    'transaction_id' => $transaction->id,
-                    'amount' => $validated['amount'],
-                    'phone_number' => $validated['phone_number'],
-                    'network' => $validated['network'],
-                    'plan' => $validated['plan'],
-                ],
-            ]);
-        }
-
-        $this->walletService->credit(
-            $userId,
-            $validated['amount'],
-            'REV-' . $reference,
-            "Reversal for failed data purchase {$reference}"
-        );
-
-        $transaction->update([
-            'status' => 'failed',
-            'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $vtpassResponse['response_message'] ?? 'Data purchase failed',
-        ], 400);
+        return $this->mapResult($result);
     }
 
     public function buyElectricity(Request $request): JsonResponse
@@ -225,94 +56,14 @@ class PurchaseController extends Controller
             'disco' => 'required|string',
         ]);
 
-        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
         }
 
-        $reference = 'ELEC-' . strtoupper(Str::random(12));
-        $wallet = Wallet::where('user_id', $userId)->first();
+        $result = $this->transactionService->execute('electricity', $userId, $validated);
 
-        if (!$wallet || $wallet->balance < $validated['amount']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Insufficient wallet balance',
-            ], 400);
-        }
-
-        $transaction = Transaction::create([
-            'user_id' => $userId,
-            'wallet_id' => $wallet->id,
-            'type' => 'debit',
-            'category' => 'electricity',
-            'reference' => $reference,
-            'description' => "Electricity purchase for meter {$validated['meter_number']}",
-            'amount' => $validated['amount'],
-            'status' => 'pending',
-            'metadata' => $validated,
-        ]);
-
-        $debitResult = $this->walletService->debit(
-            $userId,
-            $validated['amount'],
-            $reference,
-            "Electricity purchase for meter {$validated['meter_number']}"
-        );
-
-        if (!$debitResult) {
-            $transaction->update(['status' => 'failed']);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to debit wallet',
-            ], 400);
-        }
-
-        $vtpassResponse = $this->vtpassService->purchaseElectricity([
-            'amount' => $validated['amount'],
-            'meter_number' => $validated['meter_number'],
-            'meter_type' => $validated['meter_type'],
-            'disco' => $validated['disco'],
-            'request_id' => $reference,
-        ]);
-
-        if (isset($vtpassResponse['code']) && $vtpassResponse['code'] === '000') {
-            $transaction->update([
-                'status' => 'successful',
-                'provider_reference' => $vtpassResponse['content']['transactions']['transactionId'] ?? null,
-                'completed_at' => now(),
-                'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Electricity purchased successfully',
-                'data' => [
-                    'reference' => $reference,
-                    'transaction_id' => $transaction->id,
-                    'amount' => $validated['amount'],
-                    'meter_number' => $validated['meter_number'],
-                    'token' => $vtpassResponse['content']['transactions']['token'] ?? null,
-                    'units' => $vtpassResponse['content']['transactions']['units'] ?? null,
-                ],
-            ]);
-        }
-
-        $this->walletService->credit(
-            $userId,
-            $validated['amount'],
-            'REV-' . $reference,
-            "Reversal for failed electricity purchase {$reference}"
-        );
-
-        $transaction->update([
-            'status' => 'failed',
-            'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $vtpassResponse['response_message'] ?? 'Electricity purchase failed',
-        ], 400);
+        return $this->mapResult($result);
     }
 
     public function buyCable(Request $request): JsonResponse
@@ -325,94 +76,67 @@ class PurchaseController extends Controller
             'action' => 'required|string|in:validate,subscribe',
         ]);
 
-        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
         }
 
-        $reference = 'CABLE-' . strtoupper(Str::random(12));
-        $wallet = Wallet::where('user_id', $userId)->first();
-
-        if (!$wallet || $wallet->balance < $validated['amount']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Insufficient wallet balance',
-            ], 400);
-        }
-
-        $transaction = Transaction::create([
-            'user_id' => $userId,
-            'wallet_id' => $wallet->id,
-            'type' => 'debit',
-            'category' => 'cable',
-            'reference' => $reference,
-            'description' => "Cable subscription for {$validated['smartcard_number']}",
-            'amount' => $validated['amount'],
-            'status' => 'pending',
-            'metadata' => $validated,
-        ]);
-
-        $debitResult = $this->walletService->debit(
-            $userId,
-            $validated['amount'],
-            $reference,
-            "Cable subscription for {$validated['smartcard_number']}"
-        );
-
-        if (!$debitResult) {
-            $transaction->update(['status' => 'failed']);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to debit wallet',
-            ], 400);
-        }
-
-        $vtpassResponse = $this->vtpassService->purchaseCable([
-            'amount' => $validated['amount'],
-            'smartcard_number' => $validated['smartcard_number'],
-            'cable' => $validated['cable'],
-            'package' => $validated['package'],
-            'action' => $validated['action'],
-            'request_id' => $reference,
-        ]);
-
-        if (isset($vtpassResponse['code']) && $vtpassResponse['code'] === '000') {
-            $transaction->update([
-                'status' => 'successful',
-                'provider_reference' => $vtpassResponse['content']['transactions']['transactionId'] ?? null,
-                'completed_at' => now(),
-                'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
+        if ($validated['action'] === 'validate') {
+            $verification = $this->transactionService->verifyCustomer('cable', [
+                'serviceID' => $validated['cable'],
+                'billersCode' => $validated['smartcard_number'],
             ]);
 
+            return response()->json($verification, $verification['success'] ? 200 : 400);
+        }
+
+        $result = $this->transactionService->execute('cable', $userId, $validated);
+
+        return $this->mapResult($result);
+    }
+
+    protected function mapResult(array $result): JsonResponse
+    {
+        $transaction = $result['transaction'] ?? null;
+        $data = $result['data'] ?? [];
+
+        if ($result['status'] === 'successful' && $transaction) {
             return response()->json([
                 'success' => true,
-                'message' => 'Cable subscription successful',
-                'data' => [
-                    'reference' => $reference,
+                'message' => $result['message'],
+                'data' => array_merge([
+                    'reference' => $transaction->reference,
                     'transaction_id' => $transaction->id,
-                    'amount' => $validated['amount'],
-                    'smartcard_number' => $validated['smartcard_number'],
-                    'cable' => $validated['cable'],
-                    'package' => $validated['package'],
-                ],
+                    'amount' => $transaction->amount,
+                ], $data),
             ]);
         }
 
-        $this->walletService->credit(
-            $userId,
-            $validated['amount'],
-            'REV-' . $reference,
-            "Reversal for failed cable purchase {$reference}"
-        );
-
-        $transaction->update([
-            'status' => 'failed',
-            'metadata' => array_merge($transaction->metadata ?? [], ['vtpass_response' => $vtpassResponse]),
-        ]);
+        if ($result['status'] === 'processing' && $transaction) {
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'],
+                'data' => array_merge([
+                    'reference' => $transaction->reference,
+                    'transaction_id' => $transaction->id,
+                ], $data),
+            ]);
+        }
 
         return response()->json([
             'success' => false,
-            'message' => $vtpassResponse['response_message'] ?? 'Cable subscription failed',
+            'message' => $result['message'] ?? 'Purchase failed',
+            'data' => $data ?: null,
         ], 400);
+    }
+
+    protected function userId(Request $request): ?int
+    {
+        return $request->user()['id'] ?? $request->user('api')['id'] ?? null;
+    }
+
+    protected function unauthorized(): JsonResponse
+    {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 }

@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\Log;
 class FlutterwaveService
 {
     protected Client $client;
+
     protected string $secretKey;
+
     protected string $publicKey;
+
     protected string $webhookSecret;
 
     public function __construct()
@@ -68,6 +71,7 @@ class FlutterwaveService
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
+
             return [
                 'status' => 'error',
                 'message' => 'Payment initialization failed',
@@ -93,6 +97,7 @@ class FlutterwaveService
                 'transaction_id' => $transactionId,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -104,7 +109,7 @@ class FlutterwaveService
             'account_number' => $accountNumber,
             'amount' => $amount,
             'currency' => $currency,
-            'reference' => 'FWT-' . strtoupper(uniqid()),
+            'reference' => 'FWT-'.strtoupper(uniqid()),
             'beneficiary_name' => $accountName,
             'narration' => 'Wallet withdrawal',
         ];
@@ -127,13 +132,14 @@ class FlutterwaveService
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     public function verifyWebhookSignature(array $payload, ?string $signature): bool
     {
-        if (!$signature) {
+        if (! $signature) {
             return false;
         }
 
@@ -146,11 +152,13 @@ class FlutterwaveService
     {
         try {
             $response = $this->client->get("/banks/{$country}");
+
             return json_decode($response->getBody()->getContents(), true);
         } catch (GuzzleException $e) {
             Log::error('Flutterwave banks fetch failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

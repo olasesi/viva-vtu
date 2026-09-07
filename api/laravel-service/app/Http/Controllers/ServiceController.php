@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\VtpassService;
+use App\Services\Providers\VtpassProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    protected VtpassService $vtpassService;
+    protected VtpassProvider $vtpassProvider;
 
-    public function __construct(VtpassService $vtpassService)
+    public function __construct(VtpassProvider $vtpassProvider)
     {
-        $this->vtpassService = $vtpassService;
+        $this->vtpassProvider = $vtpassProvider;
     }
 
     public function listServices(): JsonResponse
     {
-        $response = $this->vtpassService->getServiceCategories();
+        $response = $this->vtpassProvider->getServiceCategories();
 
-        if (!isset($response['code']) || $response['code'] !== '000') {
+        if (! isset($response['code']) || $response['code'] !== '000') {
             return response()->json([
                 'success' => false,
                 'message' => $response['response_message'] ?? 'Failed to fetch services',
@@ -44,7 +44,7 @@ class ServiceController extends Controller
     {
         $response = $this->vtpassService->getServiceProducts($serviceId);
 
-        if (!isset($response['code']) || $response['code'] !== '000') {
+        if (! isset($response['code']) || $response['code'] !== '000') {
             return response()->json([
                 'success' => false,
                 'message' => $response['response_message'] ?? 'Failed to fetch products',

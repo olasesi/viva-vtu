@@ -13,7 +13,7 @@ class WalletService
     {
         $wallet = Wallet::where('user_id', $userId)->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             $wallet = Wallet::create([
                 'user_id' => $userId,
                 'balance' => 0,
@@ -29,7 +29,7 @@ class WalletService
         return DB::transaction(function () use ($userId, $amount, $reference, $description) {
             $wallet = Wallet::where('user_id', $userId)->lockForUpdate()->first();
 
-            if (!$wallet) {
+            if (! $wallet) {
                 $wallet = Wallet::create([
                     'user_id' => $userId,
                     'balance' => 0,
@@ -43,6 +43,7 @@ class WalletService
                     'user_id' => $userId,
                     'reference' => $reference,
                 ]);
+
                 return false;
             }
 
@@ -75,11 +76,12 @@ class WalletService
 
     public function debit(int $userId, float $amount, string $reference, string $description = ''): bool
     {
-        return DB::transaction(function () use ($userId, $amount, $reference, $description) {
+        return DB::transaction(function () use ($userId, $amount, $reference) {
             $wallet = Wallet::where('user_id', $userId)->lockForUpdate()->first();
 
-            if (!$wallet) {
+            if (! $wallet) {
                 Log::warning('Wallet not found for debit', ['user_id' => $userId]);
+
                 return false;
             }
 
@@ -89,6 +91,7 @@ class WalletService
                     'requested' => $amount,
                     'available' => $wallet->balance,
                 ]);
+
                 return false;
             }
 
@@ -98,6 +101,7 @@ class WalletService
                     'user_id' => $userId,
                     'reference' => $reference,
                 ]);
+
                 return false;
             }
 
@@ -121,18 +125,20 @@ class WalletService
         return DB::transaction(function () use ($fromUserId, $toUserId, $amount) {
             if ($fromUserId === $toUserId) {
                 Log::warning('Self-transfer attempt', ['user_id' => $fromUserId]);
+
                 return false;
             }
 
             $fromWallet = Wallet::where('user_id', $fromUserId)->lockForUpdate()->first();
             $toWallet = Wallet::where('user_id', $toUserId)->lockForUpdate()->first();
 
-            if (!$fromWallet) {
+            if (! $fromWallet) {
                 Log::warning('Source wallet not found', ['user_id' => $fromUserId]);
+
                 return false;
             }
 
-            if (!$toWallet) {
+            if (! $toWallet) {
                 $toWallet = Wallet::create([
                     'user_id' => $toUserId,
                     'balance' => 0,
@@ -146,10 +152,11 @@ class WalletService
                     'requested' => $amount,
                     'available' => $fromWallet->balance,
                 ]);
+
                 return false;
             }
 
-            $transferRef = 'TRF-' . strtoupper(uniqid());
+            $transferRef = 'TRF-'.strtoupper(uniqid());
 
             $fromWallet->update([
                 'balance' => (float) $fromWallet->balance - $amount,

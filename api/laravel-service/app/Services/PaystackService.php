@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\Log;
 class PaystackService
 {
     protected Client $client;
+
     protected string $secretKey;
+
     protected string $publicKey;
+
     protected string $webhookSecret;
 
     public function __construct()
@@ -60,6 +63,7 @@ class PaystackService
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
+
             return [
                 'status' => false,
                 'message' => 'Payment initialization failed',
@@ -85,6 +89,7 @@ class PaystackService
                 'reference' => $reference,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -117,6 +122,7 @@ class PaystackService
                 'name' => $name,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -149,13 +155,14 @@ class PaystackService
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     public function verifyWebhookSignature(array $payload, ?string $signature): bool
     {
-        if (!$signature) {
+        if (! $signature) {
             return false;
         }
 
@@ -168,11 +175,13 @@ class PaystackService
     {
         try {
             $response = $this->client->get('/bank');
+
             return json_decode($response->getBody()->getContents(), true);
         } catch (GuzzleException $e) {
             Log::error('Paystack banks fetch failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Transaction;
 use App\Services\PaystackService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 class WalletController extends Controller
 {
     protected WalletService $walletService;
+
     protected PaystackService $paystackService;
 
     public function __construct(WalletService $walletService, PaystackService $paystackService)
@@ -22,7 +24,7 @@ class WalletController extends Controller
     {
         $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -41,7 +43,7 @@ class WalletController extends Controller
     {
         $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -59,7 +61,7 @@ class WalletController extends Controller
 
         $result = $this->paystackService->initializeTransaction($amount, $email, $metadata);
 
-        if (!isset($result['status']) || $result['status'] !== true) {
+        if (! isset($result['status']) || $result['status'] !== true) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'] ?? 'Failed to initialize payment',
@@ -81,11 +83,11 @@ class WalletController extends Controller
     {
         $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $transactions = \App\Models\Transaction::where('user_id', $userId)
+        $transactions = Transaction::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 20));
 

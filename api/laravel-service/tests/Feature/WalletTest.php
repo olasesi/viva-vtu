@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\Transaction;
+use App\Services\PaystackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
 
@@ -231,6 +231,20 @@ it('can create wallet fund payment initialization', function () {
     $user = User::factory()->create([
         'email' => 'test@example.com',
     ]);
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('initializeTransaction')
+            ->once()
+            ->andReturn([
+                'status' => true,
+                'message' => 'Authorization URL created',
+                'data' => [
+                    'authorization_url' => 'https://checkout.paystack.com/xyz',
+                    'access_code' => 'abc123',
+                    'reference' => 'VIVATU-fund-123',
+                ],
+            ]);
+    });
 
     $response = $this->actingAs($user, 'api')
         ->postJson('/api/wallet/fund', [
