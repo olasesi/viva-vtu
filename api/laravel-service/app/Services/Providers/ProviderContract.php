@@ -22,6 +22,18 @@ interface ProviderContract
     public function purchaseCable(array $params): array;
 
     /**
+     * Purchase exam pins (WAEC / NECO / NABTEB / NBAIS checkers) for
+     * the 'education' vertical.
+     */
+    public function purchaseExamPins(array $params): array;
+
+    /**
+     * Subscribe a customer to a streaming platform (Netflix, Showmax, DSTV
+     * streaming, etc.) for the 'streaming' vertical.
+     */
+    public function purchaseStreaming(array $params): array;
+
+    /**
      * Verify a customer/biller before debiting (meter, smartcard, phone).
      */
     public function verifyCustomer(array $params): ?array;

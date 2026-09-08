@@ -7,9 +7,11 @@ use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Services\FlutterwaveService;
 use App\Services\PaystackService;
+use App\Services\TransactionService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
@@ -19,14 +21,18 @@ class WebhookController extends Controller
 
     protected WalletService $walletService;
 
+    protected TransactionService $transactionService;
+
     public function __construct(
         PaystackService $paystackService,
         FlutterwaveService $flutterwaveService,
-        WalletService $walletService
+        WalletService $walletService,
+        TransactionService $transactionService
     ) {
         $this->paystackService = $paystackService;
         $this->flutterwaveService = $flutterwaveService;
         $this->walletService = $walletService;
+        $this->transactionService = $transactionService;
     }
 
     public function handlePaystack(Request $request): JsonResponse
@@ -113,6 +119,130 @@ class WebhookController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Webhook processed']);
+    }
+
+    /**
+     * Ingest an upstream aggregator (AidaPay / EasyAccess / ...) status
+     * webhook and reconcile the matching pending transaction.
+     */
+    public function handleAggregator(Request $request, string $slug): JsonResponse
+    {
+        $providerConfig = config('aggregators.providers.'.$slug);
+        $webhook = $providerConfig['webhook'] ?? null;
+
+        if (! $providerConfig || ! $webhook) {
+            return response()->json(['success' => false, 'message' => 'Unknown aggregator webhook'], 404);
+        }
+
+        $payload = (array) json_decode($request->getContent(), true);
+
+        PaymentLog::create([
+            'user_id' => null,
+            'transaction_id' => null,
+            'gateway' => $slug,
+            'event_type' => $payload['type'] ?? 'unknown',
+            'payload' => $payload,
+            'response' => [],
+            'ip_address' => $request->ip(),
+        ]);
+
+        $secretKey = $webhook['secret_from'] ?? 'webhook_secret';
+        $secret = (string) ($providerConfig[$secretKey] ?? '');
+        $header = (string) ($webhook['signature_header'] ?? 'Signature');
+
+        if ($secret !== '') {
+            $expected = hash_hmac('sha256', $request->getContent(), $secret);
+            $received = (string) ($request->header($header) ?? '');
+
+            if (! hash_equals($expected, $received)) {
+                return response()->json(['success' => false, 'message' => 'Invalid signature'], 403);
+            }
+        } else {
+            Log::warning('Aggregator webhook received without a signature secret', ['slug' => $slug]);
+        }
+
+        $status = (string) (data_get($payload, $webhook['status_path'] ?? 'status') ?? '');
+        $reference = data_get($payload, $webhook['reference_path'] ?? 'reference');
+        $hash = data_get($payload, $webhook['hash_path'] ?? 'transaction_hash');
+
+        $this->reconcile(
+            $slug,
+            $status,
+            is_string($reference) ? $reference : null,
+            is_string($hash) ? $hash : null,
+            $webhook
+        );
+
+        return response()->json(['success' => true, 'message' => 'Webhook processed']);
+    }
+
+    protected function reconcile(string $slug, string $status, ?string $reference, ?string $hash, array $webhook): void
+    {
+        $transaction = $reference
+            ? Transaction::where('reference', $reference)->first()
+            : null;
+
+        if (! $transaction && $hash) {
+            $transaction = Transaction::where('provider_reference', $hash)
+                ->orWhere('metadata->provider_reference', $hash)
+                ->first();
+        }
+
+        if (! $transaction) {
+            Log::warning('Aggregator webhook for unknown transaction', [
+                'slug' => $slug,
+                'reference' => $reference,
+                'hash' => $hash,
+            ]);
+
+            return;
+        }
+
+        if ($transaction->status !== 'pending') {
+            return;
+        }
+
+        $normalized = strtolower((string) $status);
+        $successful = array_map('strtolower', (array) ($webhook['successful_statuses'] ?? ['Completed']));
+        $failed = array_map('strtolower', (array) ($webhook['failed_statuses'] ?? ['Refund', 'Cancelled']));
+
+        if (in_array($normalized, $successful, true)) {
+            $transaction->update([
+                'status' => 'successful',
+                'provider_reference' => $hash ?? $transaction->provider_reference,
+                'completed_at' => now(),
+                'last_error' => null,
+                'metadata' => array_merge((array) $transaction->metadata, [
+                    'aggregator_webhook' => [
+                        'slug' => $slug,
+                        'status' => $status,
+                        'received_at' => now()->toIso8601String(),
+                    ],
+                ]),
+            ]);
+
+            Log::info('Transaction reconciled via aggregator webhook', [
+                'slug' => $slug,
+                'reference' => $transaction->reference,
+            ]);
+
+            PaymentLog::where('gateway', $slug)
+                ->latest('id')
+                ->first()?->update(['transaction_id' => $transaction->id]);
+
+            return;
+        }
+
+        if (in_array($normalized, $failed, true)) {
+            $this->transactionService->reverse($transaction, 'Aggregator webhook reported '.$status);
+
+            PaymentLog::where('gateway', $slug)
+                ->latest('id')
+                ->first()?->update(['transaction_id' => $transaction->id]);
+        }
+
+        // Processing / Pending and anything else: transaction stays pending,
+        // the scheduled requery job keeps polling until the final status.
     }
 
     public function handleFlutterwave(Request $request): JsonResponse

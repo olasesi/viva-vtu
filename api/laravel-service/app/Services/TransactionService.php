@@ -17,6 +17,17 @@ class TransactionService
         'data' => 'DAT',
         'electricity' => 'ELEC',
         'cable' => 'CABLE',
+        'education' => 'EDU',
+        'streaming' => 'STRM',
+    ];
+
+    protected const METHOD_MAP = [
+        'airtime' => 'purchaseAirtime',
+        'data' => 'purchaseData',
+        'electricity' => 'purchaseElectricity',
+        'cable' => 'purchaseCable',
+        'education' => 'purchaseExamPins',
+        'streaming' => 'purchaseStreaming',
     ];
 
     public function __construct(
@@ -211,22 +222,32 @@ class TransactionService
 
     public function verifyCustomer(string $category, array $params): array
     {
-        $provider = $this->router->resolve('vtpass');
+        $providers = $this->router->providersFor($category);
 
-        if (! $provider) {
-            return ['success' => false, 'message' => 'Verification service unavailable'];
+        if (empty($providers)) {
+            $provider = $this->router->resolve('vtpass');
+
+            if ($provider) {
+                $providers = ['vtpass' => $provider];
+            }
         }
 
-        $response = $provider->verifyCustomer($params);
+        foreach ($providers as $provider) {
+            $response = $provider->verifyCustomer($params);
 
-        if (! $response || ! $provider->isSuccessful($response)) {
-            return [
-                'success' => false,
-                'message' => $response['response_message'] ?? 'Customer verification failed',
-            ];
+            if ($response && $provider->isSuccessful($response)) {
+                return ['success' => true, 'data' => $response['content'] ?? []];
+            }
+
+            if ($response && ($response['code'] ?? null) !== '999') {
+                return [
+                    'success' => false,
+                    'message' => $response['response_message'] ?? 'Customer verification failed',
+                ];
+            }
         }
 
-        return ['success' => true, 'data' => $response['content'] ?? []];
+        return ['success' => false, 'message' => 'Customer verification service unavailable'];
     }
 
     protected function reserve(int $userId, string $category, string $reference, array $params, float $amount): array
@@ -281,10 +302,9 @@ class TransactionService
      */
     protected function callProvider(string $category, ProviderContract $provider, array $params, string $reference): array
     {
-        $method = 'purchase'.ucfirst($category);
         $payload = array_merge($params, ['request_id' => $reference]);
 
-        $response = $provider->{$method}($payload);
+        $response = $provider->{self::METHOD_MAP[$category] ?? 'purchase'.ucfirst($category)}($payload);
 
         $code = $response['code'] ?? '999';
         $definitiveError = $code !== '000' && $code !== '999';
@@ -309,6 +329,8 @@ class TransactionService
             'data' => "Data purchase for {$params['phone_number']}",
             'electricity' => "Electricity purchase for meter {$params['meter_number']}",
             'cable' => "Cable subscription for {$params['smartcard_number']}",
+            'education' => 'Exam pin purchase for '.strtoupper($params['exam_type'] ?? 'exam'),
+            'streaming' => 'Streaming subscription for '.($params['platform'] ?? 'streaming'),
             default => ucfirst($category).' purchase',
         };
     }
@@ -320,6 +342,8 @@ class TransactionService
             'data' => 'Data purchased successfully',
             'electricity' => 'Electricity purchased successfully',
             'cable' => 'Cable subscription successful',
+            'education' => 'Exam pin purchased successfully',
+            'streaming' => 'Streaming subscription successful',
             default => ucfirst($category).' purchase successful',
         };
     }
@@ -351,6 +375,16 @@ class TransactionService
                 'smartcard_number' => $params['smartcard_number'],
                 'cable' => $params['cable'],
                 'package' => $params['package'],
+            ],
+            'education' => $base + [
+                'exam_type' => $params['exam_type'],
+                'quantity' => $params['quantity'] ?? 1,
+                'pin' => $response['content']['transactions']['pin'] ?? $response['content']['pin'] ?? null,
+            ],
+            'streaming' => $base + [
+                'platform' => $params['platform'],
+                'plan' => $params['plan'],
+                'recipient' => $params['recipient'] ?? $params['phone_number'] ?? null,
             ],
             default => $base,
         };
@@ -399,7 +433,12 @@ class TransactionService
 
     protected function providerReference(array $response): ?string
     {
-        return $response['content']['transactions']['transactionId'] ?? null;
+        return $response['content']['transactions']['transactionId']
+            ?? $response['content']['transaction_hash']
+            ?? $response['content']['transaction']['id']
+            ?? $response['content']['ref']
+            ?? $response['content']['id']
+            ?? null;
     }
 
     protected function mergeMetadata(Transaction $transaction, array $values): array

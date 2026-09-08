@@ -105,6 +105,33 @@ class VtpassProvider implements ProviderContract
         return $this->send('/pay', $payload, 'cable');
     }
 
+    public function purchaseExamPins(array $params): array
+    {
+        $payload = [
+            'serviceID' => $params['exam_type'],
+            'billersCode' => $params['phone_number'] ?? $params['recipient'] ?? '',
+            'variation_code' => $params['variation_code'] ?? 'default',
+            'amount' => $params['amount'],
+            'phone' => $params['phone_number'] ?? $params['recipient'] ?? '',
+            'request_id' => $params['request_id'],
+        ];
+
+        return $this->send('/pay', $payload, 'exam pins');
+    }
+
+    public function purchaseStreaming(array $params): array
+    {
+        $payload = [
+            'serviceID' => $params['platform'],
+            'billersCode' => $params['phone_number'] ?? $params['recipient'] ?? '',
+            'variation_code' => $params['plan'],
+            'phone' => $params['phone_number'] ?? $params['recipient'] ?? '',
+            'request_id' => $params['request_id'],
+        ];
+
+        return $this->send('/pay', $payload, 'streaming');
+    }
+
     public function verifyCustomer(array $params): ?array
     {
         return $this->get('/merchant-verify', $params, 'customer verification');

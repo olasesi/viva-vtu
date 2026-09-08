@@ -42,7 +42,7 @@ class ServiceController extends Controller
 
     public function listProducts(Request $request, string $serviceId): JsonResponse
     {
-        $response = $this->vtpassService->getServiceProducts($serviceId);
+        $response = $this->vtpassProvider->getServiceProducts($serviceId);
 
         if (! isset($response['code']) || $response['code'] !== '000') {
             return response()->json([

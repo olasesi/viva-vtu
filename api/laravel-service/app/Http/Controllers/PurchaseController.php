@@ -95,6 +95,65 @@ class PurchaseController extends Controller
         return $this->mapResult($result);
     }
 
+    public function buyExam(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'exam_type' => 'required|string',
+            'amount' => 'required|numeric|min:100',
+            'recipient' => 'nullable|string',
+            'quantity' => 'nullable|integer|min:1|max:10',
+        ]);
+
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
+        }
+
+        $result = $this->transactionService->execute('education', $userId, $validated);
+
+        return $this->mapResult($result);
+    }
+
+    public function buyStreaming(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'platform' => 'required|string',
+            'plan' => 'required|string',
+            'amount' => 'required|numeric|min:100',
+            'recipient' => 'nullable|string',
+        ]);
+
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
+        }
+
+        $result = $this->transactionService->execute('streaming', $userId, $validated);
+
+        return $this->mapResult($result);
+    }
+
+    public function verify(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'category' => 'required|string|in:cable,electricity',
+            'serviceID' => 'required|string',
+            'billersCode' => 'required|string',
+        ]);
+
+        $userId = $this->userId($request);
+        if (! $userId) {
+            return $this->unauthorized();
+        }
+
+        $verification = $this->transactionService->verifyCustomer($validated['category'], [
+            'serviceID' => $validated['serviceID'],
+            'billersCode' => $validated['billersCode'],
+        ]);
+
+        return response()->json($verification, $verification['success'] ? 200 : 400);
+    }
+
     protected function mapResult(array $result): JsonResponse
     {
         $transaction = $result['transaction'] ?? null;

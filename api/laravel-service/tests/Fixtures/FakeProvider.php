@@ -50,6 +50,16 @@ class FakeProvider implements ProviderContract
         return $this->record($params);
     }
 
+    public function purchaseExamPins(array $params): array
+    {
+        return $this->record($params);
+    }
+
+    public function purchaseStreaming(array $params): array
+    {
+        return $this->record($params);
+    }
+
     public function verifyCustomer(array $params): ?array
     {
         return ['code' => '000', 'content' => ['Customer_Name' => 'JOHN DOE']];

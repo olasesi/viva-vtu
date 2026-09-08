@@ -24,7 +24,7 @@ function routeDataPurchasesThroughFakeProvider(string $mode): void
             'enabled' => true,
             'fake_mode' => $mode,
         ],
-        'aggregators.routing' => array_fill_keys(['airtime', 'data', 'electricity', 'cable'], ['fake']),
+        'aggregators.routing' => array_fill_keys(['airtime', 'data', 'electricity', 'cable', 'education', 'streaming'], ['fake']),
     ]);
 }
 
@@ -35,6 +35,25 @@ function makeDataPurchase(int $userId, array $params = []): array
         'amount' => 1000,
         'network' => 'mtn',
         'plan' => 'gift-1gb',
+    ], $params));
+}
+
+function makeExamPurchase(int $userId, array $params = []): array
+{
+    return app(TransactionService::class)->execute('education', $userId, array_merge([
+        'exam_type' => 'waec',
+        'amount' => 1500,
+        'quantity' => 1,
+    ], $params));
+}
+
+function makeStreamingPurchase(int $userId, array $params = []): array
+{
+    return app(TransactionService::class)->execute('streaming', $userId, array_merge([
+        'platform' => 'netflix',
+        'plan' => '1-month',
+        'amount' => 2900,
+        'recipient' => '08012345678',
     ], $params));
 }
 
@@ -122,6 +141,82 @@ it('keeps a transaction pending and schedules requery on ambiguous provider resp
     Queue::assertPushed(RequeryPendingTransaction::class, function (RequeryPendingTransaction $job) {
         return $job->transactionId > 0;
     });
+});
+
+it('purchases exam pins for the education vertical', function () {
+    $user = User::factory()->create();
+    Wallet::create(['user_id' => $user->id, 'balance' => 5000, 'currency' => 'NGN']);
+    routeDataPurchasesThroughFakeProvider('success');
+
+    $result = makeExamPurchase($user->id);
+
+    expect($result['status'])->toBe('successful')
+        ->and($result['data']['exam_type'])->toBe('waec');
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'category' => 'education',
+        'type' => 'debit',
+        'status' => 'successful',
+        'provider' => 'fake',
+    ]);
+
+    $sent = FakeProvider::$calls[0];
+
+    expect($sent['exam_type'])->toBe('waec')
+        ->and($sent['request_id'])->toBe($result['transaction']->reference);
+
+    $this->assertDatabaseHas('wallets', [
+        'user_id' => $user->id,
+        'balance' => 3500,
+    ]);
+});
+
+it('purchases streaming subscriptions for the streaming vertical', function () {
+    $user = User::factory()->create();
+    Wallet::create(['user_id' => $user->id, 'balance' => 5000, 'currency' => 'NGN']);
+    routeDataPurchasesThroughFakeProvider('success');
+
+    $result = makeStreamingPurchase($user->id);
+
+    expect($result['status'])->toBe('successful');
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'category' => 'streaming',
+        'status' => 'successful',
+        'provider' => 'fake',
+    ]);
+
+    $sent = FakeProvider::$calls[0];
+
+    expect($sent['platform'])->toBe('netflix')
+        ->and($sent['plan'])->toBe('1-month');
+
+    $this->assertDatabaseHas('wallets', [
+        'user_id' => $user->id,
+        'balance' => 2100,
+    ]);
+});
+
+it('keeps an education purchase pending and requeries on ambiguous response', function () {
+    Queue::fake();
+
+    $user = User::factory()->create();
+    Wallet::create(['user_id' => $user->id, 'balance' => 5000, 'currency' => 'NGN']);
+    routeDataPurchasesThroughFakeProvider('ambiguous');
+
+    $result = makeExamPurchase($user->id);
+
+    expect($result['status'])->toBe('processing');
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'category' => 'education',
+        'status' => 'pending',
+    ]);
+
+    Queue::assertPushed(RequeryPendingTransaction::class);
 });
 
 it('rejects a purchase when the wallet balance is insufficient', function () {
