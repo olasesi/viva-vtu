@@ -3,7 +3,7 @@
 # ║      Full-stack monorepo: Next.js frontend (root) + api/        ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
-.PHONY: help install dev build test lint logs clean migrate seed docs monitor
+.PHONY: help install dev build test lint logs clean migrate seed docs monitor db-test test-billing-unit test-billing-feature test-billing-integration test-settings
 
 # ─── Default ──────────────────────────────────────────────────────
 .DEFAULT_GOAL := help
@@ -96,6 +96,24 @@ test-auth: ## Run auth service tests
 
 test-billing: ## Run billing service tests
 	cd api/laravel-service && ./vendor/bin/pest
+
+test-billing-unit: ## Run billing service unit tests only
+	cd api/laravel-service && ./vendor/bin/pest --testsuite=Unit
+
+test-billing-feature: ## Run billing service feature tests only
+	cd api/laravel-service && ./vendor/bin/pest --testsuite=Feature
+
+test-billing-integration: ## Run billing service integration tests only (MySQL)
+	cd api/laravel-service && ./vendor/bin/pest --testsuite=Integration
+
+test-settings: ## Run the settings feature test suite (unit + feature + integration)
+	cd api/laravel-service && ./vendor/bin/pest tests/Unit/Settings tests/Feature/Settings tests/Integration/Settings
+
+db-test: ## Create the dedicated MySQL databases used by the test suites
+	@echo "🗄️  Creating test databases..."
+	@docker compose exec -T mysql mysql -u root -p$${DB_ROOT_PASSWORD:-secret} < api/shared/docker/mysql/init.sql || \
+		mysql -u root -e "CREATE DATABASE IF NOT EXISTS viva_vtu_billing_test; CREATE DATABASE IF NOT EXISTS viva_vtu_auth_test;"
+	@echo "✅ Test databases ready!"
 
 test-analytics: ## Run django analytics tests
 	cd api/django-service && python manage.py test

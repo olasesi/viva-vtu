@@ -3,6 +3,7 @@
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
@@ -44,4 +45,10 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::get('/transactions/{id}/status', [TransactionController::class, 'status']);
+
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [SettingController::class, 'index']);
+        Route::get('/{group}', [SettingController::class, 'show']);
+        Route::post('/{group}', [SettingController::class, 'update']);
+    });
 });
