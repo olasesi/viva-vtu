@@ -10,9 +10,12 @@ it('lists all available groups', function () {
     $groups = $this->service->groups();
 
     expect($groups)->toBeArray()
-        ->and($groups)->toHaveCount(17)
+        ->and($groups)->toHaveCount(23)
         ->and($groups)->toContain('business')
-        ->and($groups)->toContain('sms');
+        ->and($groups)->toContain('sms')
+        ->and($groups)->toContain('api')
+        ->and($groups)->toContain('themes')
+        ->and($groups)->toContain('support');
 });
 
 it('checks whether a group exists', function () {

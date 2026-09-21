@@ -45,10 +45,13 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::get('/transactions/{id}/status', [TransactionController::class, 'status']);
+});
 
-    Route::prefix('settings')->group(function () {
-        Route::get('/', [SettingController::class, 'index']);
-        Route::get('/{group}', [SettingController::class, 'show']);
-        Route::post('/{group}', [SettingController::class, 'update']);
-    });
+Route::get('/settings/public', [SettingController::class, 'publicSettings']);
+
+Route::middleware(['jwt.verify', 'admin'])->prefix('settings')->group(function () {
+    Route::get('/', [SettingController::class, 'index']);
+    Route::get('/{group}', [SettingController::class, 'show']);
+    Route::get('/{group}/schema', [SettingController::class, 'schema']);
+    Route::post('/{group}', [SettingController::class, 'update']);
 });

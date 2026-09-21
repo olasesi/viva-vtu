@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Services\SettingService;
+use App\Support\Settings\SettingCaster;
 use Illuminate\Http\JsonResponse;
 
 class SettingController extends Controller
@@ -42,9 +43,53 @@ class SettingController extends Controller
         ]);
     }
 
+    public function schema(string $group): JsonResponse
+    {
+        if (! $this->settingService->hasGroup($group)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Settings group not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->settingService->schema($group),
+        ]);
+    }
+
+    public function publicSettings(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->settingService->publicSettings(),
+        ]);
+    }
+
     public function update(UpdateSettingsRequest $request, SettingService $settingService, string $group): JsonResponse
     {
-        $settingService->update($group, $request->input('fields'));
+        if (! $settingService->hasGroup($group)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Settings group not found',
+            ], 404);
+        }
+
+        $fields = $request->input('fields', []);
+
+        foreach ($settingService->sensitiveFields($group) as $key) {
+            if (! array_key_exists($key, $fields)) {
+                continue;
+            }
+
+            $value = $fields[$key];
+
+            if ($value === null || $value === '' || $value === SettingCaster::mask((string) $value)) {
+                unset($fields[$key]);
+            }
+        }
+
+        $settingService->update($group, $fields);
 
         return response()->json([
             'success' => true,

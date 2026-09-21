@@ -13,6 +13,9 @@ import type {
   ElectricityPayload,
   CableTvPayload,
   FundWalletPayload,
+  SettingsGroupItem,
+  SettingsGroupSchema,
+  PublicSettings,
 } from "@/types";
 
 const api = axios.create({
@@ -32,7 +35,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -46,15 +49,19 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
-export async function login(payload: LoginPayload): Promise<ApiResponse<{ user: User; token: string }>> {
+export async function login(
+  payload: LoginPayload,
+): Promise<ApiResponse<{ user: User; token: string }>> {
   const { data } = await api.post("/api/auth/login", payload);
   return data;
 }
 
-export async function register(payload: RegisterPayload): Promise<ApiResponse<{ user: User; token: string }>> {
+export async function register(
+  payload: RegisterPayload,
+): Promise<ApiResponse<{ user: User; token: string }>> {
   const { data } = await api.post("/api/auth/register", payload);
   return data;
 }
@@ -69,32 +76,44 @@ export async function getWalletBalance(): Promise<ApiResponse<Wallet>> {
   return data;
 }
 
-export async function fundWallet(payload: FundWalletPayload): Promise<ApiResponse<{ authorization_url: string; reference: string }>> {
+export async function fundWallet(
+  payload: FundWalletPayload,
+): Promise<ApiResponse<{ authorization_url: string; reference: string }>> {
   const { data } = await api.post("/api/wallet/fund", payload);
   return data;
 }
 
-export async function verifyPayment(reference: string): Promise<ApiResponse<Wallet>> {
+export async function verifyPayment(
+  reference: string,
+): Promise<ApiResponse<Wallet>> {
   const { data } = await api.get(`/api/wallet/verify/${reference}`);
   return data;
 }
 
-export async function buyAirtime(payload: AirtimePayload): Promise<ApiResponse<Transaction>> {
+export async function buyAirtime(
+  payload: AirtimePayload,
+): Promise<ApiResponse<Transaction>> {
   const { data } = await api.post("/api/purchase/airtime", payload);
   return data;
 }
 
-export async function buyData(payload: DataPayload): Promise<ApiResponse<Transaction>> {
+export async function buyData(
+  payload: DataPayload,
+): Promise<ApiResponse<Transaction>> {
   const { data } = await api.post("/api/purchase/data", payload);
   return data;
 }
 
-export async function buyElectricity(payload: ElectricityPayload): Promise<ApiResponse<Transaction>> {
+export async function buyElectricity(
+  payload: ElectricityPayload,
+): Promise<ApiResponse<Transaction>> {
   const { data } = await api.post("/api/purchase/electricity", payload);
   return data;
 }
 
-export async function buyCableTv(payload: CableTvPayload): Promise<ApiResponse<Transaction>> {
+export async function buyCableTv(
+  payload: CableTvPayload,
+): Promise<ApiResponse<Transaction>> {
   const { data } = await api.post("/api/purchase/cable-tv", payload);
   return data;
 }
@@ -111,28 +130,77 @@ export async function getTransactions(params?: {
   return data;
 }
 
-export async function getTransaction(id: string): Promise<ApiResponse<Transaction>> {
+export async function getTransaction(
+  id: string,
+): Promise<ApiResponse<Transaction>> {
   const { data } = await api.get(`/api/transactions/${id}`);
   return data;
 }
 
-export async function getServices(): Promise<ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>> {
+export async function getServices(): Promise<
+  ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>
+> {
   const { data } = await api.get("/api/services");
   return data;
 }
 
-export async function getAllUsers(params?: { page?: number; limit?: number; search?: string }) {
+export async function getAllUsers(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   const { data } = await api.get("/api/admin/users", { params });
   return data;
 }
 
-export async function getAllTransactionsAdmin(params?: { page?: number; limit?: number; type?: string; status?: string }) {
+export async function getAllTransactionsAdmin(params?: {
+  page?: number;
+  limit?: number;
+  type?: string;
+  status?: string;
+}) {
   const { data } = await api.get("/api/admin/transactions", { params });
   return data;
 }
 
 export async function getDashboardStats() {
   const { data } = await api.get("/api/admin/stats");
+  return data;
+}
+
+export async function getAdminSettings(): Promise<
+  ApiResponse<SettingsGroupItem[]>
+> {
+  const { data } = await api.get("/api/settings");
+  return data;
+}
+
+export async function getAdminSettingsGroup(
+  group: string,
+): Promise<ApiResponse<SettingsGroupItem>> {
+  const { data } = await api.get(`/api/settings/${group}`);
+  return data;
+}
+
+export async function getAdminSettingsSchema(
+  group: string,
+): Promise<ApiResponse<SettingsGroupSchema>> {
+  const { data } = await api.get(`/api/settings/${group}/schema`);
+  return data;
+}
+
+export async function updateAdminSettingsGroup(
+  group: string,
+  fields: Record<string, unknown>,
+): Promise<ApiResponse<SettingsGroupItem>> {
+  const { data } = await api.post(`/api/settings/${group}`, { fields });
+  return data;
+}
+
+export async function getPublicSettings(): Promise<
+  ApiResponse<PublicSettings>
+> {
+  const { data } = await api.get("/api/settings/public");
   return data;
 }
 

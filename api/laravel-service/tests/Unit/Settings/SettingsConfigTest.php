@@ -21,6 +21,12 @@ it('defines all required settings groups', function () {
         'reward_points',
         'modules',
         'custom_labels',
+        'api',
+        'themes',
+        'layout',
+        'security',
+        'notifications',
+        'support',
     ]);
 });
 
@@ -163,4 +169,30 @@ it('defines the system settings incl 2-step auth and report settings', function 
         ->toContain('enable_2fa')
         ->toContain('timezone')
         ->toContain('date_format');
+});
+
+it('marks VTU provider credentials as sensitive', function () {
+    $api = config('settings.groups.api.fields');
+    $security = config('settings.groups.security.fields');
+
+    expect($api['aida_secret_key']['sensitive'] ?? false)->toBeTrue()
+        ->and($api['aida_account_pin']['sensitive'] ?? false)->toBeTrue()
+        ->and($api['easy_access_token']['sensitive'] ?? false)->toBeTrue()
+        ->and((config('settings.groups.themes.fields.mode.default') ?? ''))->toBeIn(['light', 'dark', 'system'])
+        ->and($security['max_failed_logins']['default'])->toBe(5);
+});
+
+it('defines a whitelist of publicly exposed settings groups', function () {
+    $public = config('settings.public_groups');
+
+    expect($public)->toBeArray()
+        ->toContain('business')
+        ->toContain('themes')
+        ->toContain('support')
+        ->not->toContain('api')
+        ->not->toContain('email');
+
+    foreach ($public as $group) {
+        expect(config("settings.groups.{$group}"))->not->toBeNull();
+    }
 });

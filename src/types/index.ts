@@ -21,7 +21,13 @@ export interface Wallet {
 export interface Transaction {
   id: string;
   userId: string;
-  type: "airtime" | "data" | "electricity" | "cable_tv" | "wallet_fund" | "transfer";
+  type:
+    | "airtime"
+    | "data"
+    | "electricity"
+    | "cable_tv"
+    | "wallet_fund"
+    | "transfer";
   status: "successful" | "pending" | "failed";
   amount: number;
   fee: number;
@@ -122,3 +128,29 @@ export interface FundWalletPayload {
   amount: number;
   paymentMethod: "paystack" | "flutterwave";
 }
+
+export type SettingValue = string | number | boolean | null | string[];
+
+export interface SettingsGroupItem {
+  group: string;
+  label: string;
+  icon: string | null;
+  fields: Record<string, SettingValue>;
+}
+
+export interface SettingFieldDefinition {
+  label: string;
+  type: "string" | "boolean" | "integer" | "decimal" | "enum" | "array";
+  default: SettingValue;
+  options?: string[];
+  sensitive?: boolean;
+}
+
+export interface SettingsGroupSchema {
+  group: string;
+  label: string;
+  icon: string | null;
+  fields: Record<string, SettingFieldDefinition>;
+}
+
+export type PublicSettings = Record<string, SettingsGroupItem>;

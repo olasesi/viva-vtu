@@ -625,5 +625,292 @@ return [
                 'expense_label' => ['label' => 'Expense Label', 'type' => 'string', 'default' => 'Expense', 'rules' => 'required|string|max:50'],
             ],
         ],
+
+        'api' => [
+            'label' => 'VTU API',
+            'icon' => 'plug-zap',
+            'fields' => [
+                'provider_mode' => [
+                    'label' => 'Provider Mode',
+                    'type' => 'enum',
+                    'default' => 'auto',
+                    'options' => ['auto', 'aida', 'easy_access'],
+                    'rules' => 'required|in:auto,aida,easy_access',
+                ],
+                'aida_base_url' => [
+                    'label' => 'AidaPay Base URL',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|url|max:500',
+                ],
+                'aida_public_key' => [
+                    'label' => 'AidaPay Public Key',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|string|max:255',
+                ],
+                'aida_secret_key' => [
+                    'label' => 'AidaPay Secret Key',
+                    'type' => 'string',
+                    'default' => null,
+                    'sensitive' => true,
+                    'rules' => 'nullable|string|max:500',
+                ],
+                'aida_account_pin' => [
+                    'label' => 'AidaPay Account PIN',
+                    'type' => 'string',
+                    'default' => null,
+                    'sensitive' => true,
+                    'rules' => 'nullable|string|max:20',
+                ],
+                'easy_access_base_url' => [
+                    'label' => 'EasyAccess Base URL',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|url|max:500',
+                ],
+                'easy_access_token' => [
+                    'label' => 'EasyAccess API Token',
+                    'type' => 'string',
+                    'default' => null,
+                    'sensitive' => true,
+                    'rules' => 'nullable|string|max:500',
+                ],
+                'easy_access_enabled' => [
+                    'label' => 'EasyAccess Enabled',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
+                'exchange_rate_margin' => [
+                    'label' => 'Exchange Rate Margin (%)',
+                    'type' => 'decimal',
+                    'default' => 0,
+                    'rules' => 'numeric|min:0|max:100',
+                ],
+                'max_requests_per_second' => [
+                    'label' => 'Max Requests Per Second',
+                    'type' => 'integer',
+                    'default' => 5,
+                    'rules' => 'integer|min:1|max:100',
+                ],
+            ],
+        ],
+
+        'themes' => [
+            'label' => 'Themes',
+            'icon' => 'palette',
+            'fields' => [
+                'primary_color' => [
+                    'label' => 'Primary Color',
+                    'type' => 'string',
+                    'default' => '#2563eb',
+                    'rules' => 'required|string|max:20',
+                ],
+                'accent_color' => [
+                    'label' => 'Accent Color',
+                    'type' => 'string',
+                    'default' => '#f59e0b',
+                    'rules' => 'required|string|max:20',
+                ],
+                'success_color' => [
+                    'label' => 'Success Color',
+                    'type' => 'string',
+                    'default' => '#10b981',
+                    'rules' => 'required|string|max:20',
+                ],
+                'mode' => [
+                    'label' => 'Color Mode',
+                    'type' => 'enum',
+                    'default' => 'light',
+                    'options' => ['light', 'dark', 'system'],
+                    'rules' => 'required|in:light,dark,system',
+                ],
+                'radius' => [
+                    'label' => 'Border Radius',
+                    'type' => 'enum',
+                    'default' => 'medium',
+                    'options' => ['sharp', 'small', 'medium', 'large', 'full'],
+                    'rules' => 'required|in:sharp,small,medium,large,full',
+                ],
+                'font_family' => [
+                    'label' => 'Font Family',
+                    'type' => 'string',
+                    'default' => 'Inter',
+                    'rules' => 'required|string|max:100',
+                ],
+            ],
+        ],
+
+        'layout' => [
+            'label' => 'Layout',
+            'icon' => 'layout-template',
+            'fields' => [
+                'sidebar_collapsed' => [
+                    'label' => 'Sidebar Collapsed by Default',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
+                'dense_table_rows' => [
+                    'label' => 'Dense Table Rows',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'max_items_per_page' => [
+                    'label' => 'Max Items Per Page',
+                    'type' => 'integer',
+                    'default' => 50,
+                    'rules' => 'integer|min:10|max:500',
+                ],
+                'currency_position' => [
+                    'label' => 'Currency Position',
+                    'type' => 'enum',
+                    'default' => 'before',
+                    'options' => ['before', 'after'],
+                    'rules' => 'required|in:before,after',
+                ],
+                'default_page' => [
+                    'label' => 'Default Landing Page',
+                    'type' => 'enum',
+                    'default' => 'dashboard',
+                    'options' => ['dashboard', 'transactions', 'services'],
+                    'rules' => 'required|in:dashboard,transactions,services',
+                ],
+            ],
+        ],
+
+        'security' => [
+            'label' => 'Security',
+            'icon' => 'shield',
+            'fields' => [
+                'session_timeout_minutes' => [
+                    'label' => 'Session Timeout (Minutes)',
+                    'type' => 'integer',
+                    'default' => 60,
+                    'rules' => 'required|integer|min:5|max:10080',
+                ],
+                'token_expiry_minutes' => [
+                    'label' => 'API Token Expiry (Minutes)',
+                    'type' => 'integer',
+                    'default' => 120,
+                    'rules' => 'required|integer|min:5|max:43200',
+                ],
+                'max_failed_logins' => [
+                    'label' => 'Max Failed Login Attempts',
+                    'type' => 'integer',
+                    'default' => 5,
+                    'rules' => 'required|integer|min:1|max:100',
+                ],
+                'lockout_duration_minutes' => [
+                    'label' => 'Lockout Duration (Minutes)',
+                    'type' => 'integer',
+                    'default' => 15,
+                    'rules' => 'required|integer|min:1|max:1440',
+                ],
+                'require_strong_password' => [
+                    'label' => 'Require Strong Password',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'enable_login_captcha' => [
+                    'label' => 'Enable Login Captcha',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
+            ],
+        ],
+
+        'notifications' => [
+            'label' => 'Notifications',
+            'icon' => 'bell',
+            'fields' => [
+                'notify_email' => [
+                    'label' => 'Email Notifications',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'notify_sms' => [
+                    'label' => 'SMS Notifications',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'notify_push' => [
+                    'label' => 'Push Notifications',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
+                'topup_confirmation' => [
+                    'label' => 'Top-Up Confirmation Alert',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'wallet_debit_alert' => [
+                    'label' => 'Wallet Debit Alert',
+                    'type' => 'boolean',
+                    'default' => true,
+                    'rules' => 'boolean',
+                ],
+                'weekly_digest' => [
+                    'label' => 'Weekly Summary Digest',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
+            ],
+        ],
+
+        'support' => [
+            'label' => 'Support',
+            'icon' => 'headphones',
+            'fields' => [
+                'support_email' => [
+                    'label' => 'Support Email',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|email|max:255',
+                ],
+                'support_phone' => [
+                    'label' => 'Support Phone',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|string|max:30',
+                ],
+                'whatsapp_number' => [
+                    'label' => 'WhatsApp Number',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|string|max:30',
+                ],
+                'help_center_url' => [
+                    'label' => 'Help Center URL',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|url|max:500',
+                ],
+                'office_hours' => [
+                    'label' => 'Office Hours',
+                    'type' => 'string',
+                    'default' => null,
+                    'rules' => 'nullable|string|max:120',
+                ],
+            ],
+        ],
+    ],
+
+    'public_groups' => [
+        'business',
+        'system',
+        'themes',
+        'layout',
+        'support',
+        'notifications',
     ],
 ];

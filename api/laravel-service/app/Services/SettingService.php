@@ -200,4 +200,46 @@ class SettingService
             return $value;
         }
     }
+
+    public function schema(string $group): array
+    {
+        if (! $this->hasGroup($group)) {
+            throw new InvalidArgumentException("Settings group [{$group}] does not exist.");
+        }
+
+        $available = ['label', 'type', 'default', 'options', 'sensitive'];
+
+        $fields = [];
+
+        foreach ($this->fields($group) as $key => $definition) {
+            $fields[$key] = collect($definition)
+                ->only($available)
+                ->all();
+        }
+
+        return [
+            'group' => $group,
+            'label' => $this->config[$group]['label'] ?? $group,
+            'icon' => $this->config[$group]['icon'] ?? null,
+            'fields' => $fields,
+        ];
+    }
+
+    public function publicGroups(): array
+    {
+        return (array) config('settings.public_groups', []);
+    }
+
+    public function publicSettings(): array
+    {
+        $settings = [];
+
+        foreach ($this->publicGroups() as $group) {
+            if ($this->hasGroup($group)) {
+                $settings[$group] = $this->expose($group);
+            }
+        }
+
+        return $settings;
+    }
 }

@@ -106,7 +106,11 @@ export function Sidebar() {
           className="h-8 w-8"
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </Button>
       </div>
 
@@ -114,7 +118,9 @@ export function Sidebar() {
         <div className="px-4 pb-4">
           <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
             <p className="text-xs text-muted-foreground">Wallet Balance</p>
-            <p className="text-lg font-bold text-primary">{formatCurrency(balance?.balance || 0)}</p>
+            <p className="text-lg font-bold text-primary">
+              {formatCurrency(balance?.balance || 0)}
+            </p>
           </div>
         </div>
       )}
@@ -206,6 +212,17 @@ export function Sidebar() {
               >
                 <Users className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Users</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/settings"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/dashboard/admin/settings"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <Settings className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Settings</span>}
               </Link>
               <Link
                 href="/dashboard/admin/transactions"
