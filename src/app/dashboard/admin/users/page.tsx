@@ -17,7 +17,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import { Users, Search, ChevronLeft, ChevronRight, Shield, UserCheck, UserX } from "lucide-react";
+import { ROLE_LABELS, UserRole } from "@/lib/constants";
+import {
+  Users,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
@@ -86,7 +95,8 @@ export default function AdminUsersPage() {
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="text-xs font-bold text-primary">
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                            {user.firstName?.[0]}
+                            {user.lastName?.[0]}
                           </span>
                         </div>
                         <span className="font-medium">
@@ -94,11 +104,19 @@ export default function AdminUsersPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.email}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role === "admin" && <Shield className="h-3 w-3 mr-1" />}
-                        {user.role}
+                      <Badge
+                        variant={
+                          user.role === "admin" ? "default" : "secondary"
+                        }
+                      >
+                        {user.role === "admin" && (
+                          <Shield className="h-3 w-3 mr-1" />
+                        )}
+                        {ROLE_LABELS[user.role as UserRole] ?? user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>

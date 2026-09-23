@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Roles\UserRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +16,7 @@ class EnsureAdmin
             ?? $request->user()['role']
             ?? null;
 
-        if ($role !== 'admin') {
+        if (! UserRole::isAdmin($role)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden: administrator access required',

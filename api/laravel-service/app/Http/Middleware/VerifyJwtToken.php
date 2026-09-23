@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Roles\UserRole;
 use Closure;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -28,7 +29,7 @@ class VerifyJwtToken
                 'auth_user' => [
                     'id' => $user->id,
                     'email' => $user->email,
-                    'role' => $user->role ?? 'user',
+                    'role' => UserRole::normalize($user->role),
                 ],
             ]);
 
@@ -52,13 +53,13 @@ class VerifyJwtToken
         if ($sharedSecret && $providedHash && hash_equals($expectedHash, $providedHash)) {
             $userId = $request->header('X-User-Id');
             $userEmail = $request->header('X-User-Email');
-            $userRole = $request->header('X-User-Role', 'user');
+            $userRole = $request->header('X-User-Role', UserRole::default());
 
             $request->merge([
                 'auth_user' => [
                     'id' => $userId,
                     'email' => $userEmail,
-                    'role' => $userRole,
+                    'role' => UserRole::normalize($userRole),
                 ],
             ]);
 
@@ -76,6 +77,7 @@ class VerifyJwtToken
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (isset($body['success']) && $body['success'] && isset($body['user'])) {
+                $body['user']['role'] = UserRole::normalize($body['user']['role'] ?? null);
                 $request->merge(['auth_user' => $body['user']]);
 
                 return $next($request);

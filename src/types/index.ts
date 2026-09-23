@@ -1,10 +1,19 @@
+export type UserRole =
+  | "user"
+  | "admin"
+  | "agent"
+  | "merchant"
+  | "reseller"
+  | "distributor"
+  | "sub_reseller";
+
 export interface User {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
-  role: "user" | "admin";
+  role: UserRole;
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;

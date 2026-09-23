@@ -1,6 +1,27 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+export type UserRole =
+  | "user"
+  | "admin"
+  | "agent"
+  | "merchant"
+  | "reseller"
+  | "distributor"
+  | "sub_reseller";
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  user: "User",
+  admin: "Administrator",
+  agent: "Agent",
+  merchant: "Merchant",
+  reseller: "Reseller",
+  distributor: "Distributor",
+  sub_reseller: "Sub-Reseller",
+};
+
+export const ADMIN_ROLES: UserRole[] = ["admin"];
+
 export interface NetworkProvider {
   code: string;
   name: string;
@@ -72,21 +93,61 @@ export const CABLE_PROVIDERS: CableProvider[] = [
     code: "dstv",
     name: "DStv",
     packages: [
-      { code: "dstv-padi", name: "DStv Padi", price: 2150, validity: "1 month" },
-      { code: "dstv-yanga", name: "DStv Yanga", price: 3600, validity: "1 month" },
-      { code: "dstv-confam", name: "DStv Confam", price: 5400, validity: "1 month" },
-      { code: "dstv-premium", name: "DStv Premium", price: 21000, validity: "1 month" },
-      { code: "dstv-compact", name: "DStv Compact", price: 7500, validity: "1 month" },
+      {
+        code: "dstv-padi",
+        name: "DStv Padi",
+        price: 2150,
+        validity: "1 month",
+      },
+      {
+        code: "dstv-yanga",
+        name: "DStv Yanga",
+        price: 3600,
+        validity: "1 month",
+      },
+      {
+        code: "dstv-confam",
+        name: "DStv Confam",
+        price: 5400,
+        validity: "1 month",
+      },
+      {
+        code: "dstv-premium",
+        name: "DStv Premium",
+        price: 21000,
+        validity: "1 month",
+      },
+      {
+        code: "dstv-compact",
+        name: "DStv Compact",
+        price: 7500,
+        validity: "1 month",
+      },
     ],
   },
   {
     code: "gotv",
     name: "GOtv",
     packages: [
-      { code: "gotv-lite", name: "GOtv Lite", price: 1100, validity: "1 month" },
-      { code: "gotv-plus", name: "GOtv Plus", price: 2600, validity: "1 month" },
+      {
+        code: "gotv-lite",
+        name: "GOtv Lite",
+        price: 1100,
+        validity: "1 month",
+      },
+      {
+        code: "gotv-plus",
+        name: "GOtv Plus",
+        price: 2600,
+        validity: "1 month",
+      },
       { code: "gotv-max", name: "GOtv Max", price: 4850, validity: "1 month" },
-      { code: "gotv-supa", name: "GOtv Supa", price: 6200, validity: "1 month" },
+      {
+        code: "gotv-supa",
+        name: "GOtv Supa",
+        price: 6200,
+        validity: "1 month",
+      },
     ],
   },
   {
@@ -112,29 +173,169 @@ export interface DataPlan {
 }
 
 export const DATA_PLANS: DataPlan[] = [
-  { code: "mtn-1gb", name: "1GB", network: "mtn", amount: 350, validity: "30 days", description: "1GB 30 days" },
-  { code: "mtn-2gb", name: "2GB", network: "mtn", amount: 700, validity: "30 days", description: "2GB 30 days" },
-  { code: "mtn-3gb", name: "3GB", network: "mtn", amount: 1000, validity: "30 days", description: "3GB 30 days" },
-  { code: "mtn-5gb", name: "5GB", network: "mtn", amount: 1500, validity: "30 days", description: "5GB 30 days" },
-  { code: "mtn-10gb", name: "10GB", network: "mtn", amount: 3000, validity: "30 days", description: "10GB 30 days" },
+  {
+    code: "mtn-1gb",
+    name: "1GB",
+    network: "mtn",
+    amount: 350,
+    validity: "30 days",
+    description: "1GB 30 days",
+  },
+  {
+    code: "mtn-2gb",
+    name: "2GB",
+    network: "mtn",
+    amount: 700,
+    validity: "30 days",
+    description: "2GB 30 days",
+  },
+  {
+    code: "mtn-3gb",
+    name: "3GB",
+    network: "mtn",
+    amount: 1000,
+    validity: "30 days",
+    description: "3GB 30 days",
+  },
+  {
+    code: "mtn-5gb",
+    name: "5GB",
+    network: "mtn",
+    amount: 1500,
+    validity: "30 days",
+    description: "5GB 30 days",
+  },
+  {
+    code: "mtn-10gb",
+    name: "10GB",
+    network: "mtn",
+    amount: 3000,
+    validity: "30 days",
+    description: "10GB 30 days",
+  },
 
-  { code: "airtel-1gb", name: "1GB", network: "airtel", amount: 350, validity: "30 days", description: "1GB 30 days" },
-  { code: "airtel-2gb", name: "2GB", network: "airtel", amount: 700, validity: "30 days", description: "2GB 30 days" },
-  { code: "airtel-3gb", name: "3GB", network: "airtel", amount: 1000, validity: "30 days", description: "3GB 30 days" },
-  { code: "airtel-5gb", name: "5GB", network: "airtel", amount: 1500, validity: "30 days", description: "5GB 30 days" },
-  { code: "airtel-10gb", name: "10GB", network: "airtel", amount: 3000, validity: "30 days", description: "10GB 30 days" },
+  {
+    code: "airtel-1gb",
+    name: "1GB",
+    network: "airtel",
+    amount: 350,
+    validity: "30 days",
+    description: "1GB 30 days",
+  },
+  {
+    code: "airtel-2gb",
+    name: "2GB",
+    network: "airtel",
+    amount: 700,
+    validity: "30 days",
+    description: "2GB 30 days",
+  },
+  {
+    code: "airtel-3gb",
+    name: "3GB",
+    network: "airtel",
+    amount: 1000,
+    validity: "30 days",
+    description: "3GB 30 days",
+  },
+  {
+    code: "airtel-5gb",
+    name: "5GB",
+    network: "airtel",
+    amount: 1500,
+    validity: "30 days",
+    description: "5GB 30 days",
+  },
+  {
+    code: "airtel-10gb",
+    name: "10GB",
+    network: "airtel",
+    amount: 3000,
+    validity: "30 days",
+    description: "10GB 30 days",
+  },
 
-  { code: "glo-1gb", name: "1GB", network: "glo", amount: 350, validity: "30 days", description: "1GB 30 days" },
-  { code: "glo-2gb", name: "2GB", network: "glo", amount: 700, validity: "30 days", description: "2GB 30 days" },
-  { code: "glo-3gb", name: "3GB", network: "glo", amount: 1000, validity: "30 days", description: "3GB 30 days" },
-  { code: "glo-5gb", name: "5GB", network: "glo", amount: 1500, validity: "30 days", description: "5GB 30 days" },
-  { code: "glo-10gb", name: "10GB", network: "glo", amount: 3000, validity: "30 days", description: "10GB 30 days" },
+  {
+    code: "glo-1gb",
+    name: "1GB",
+    network: "glo",
+    amount: 350,
+    validity: "30 days",
+    description: "1GB 30 days",
+  },
+  {
+    code: "glo-2gb",
+    name: "2GB",
+    network: "glo",
+    amount: 700,
+    validity: "30 days",
+    description: "2GB 30 days",
+  },
+  {
+    code: "glo-3gb",
+    name: "3GB",
+    network: "glo",
+    amount: 1000,
+    validity: "30 days",
+    description: "3GB 30 days",
+  },
+  {
+    code: "glo-5gb",
+    name: "5GB",
+    network: "glo",
+    amount: 1500,
+    validity: "30 days",
+    description: "5GB 30 days",
+  },
+  {
+    code: "glo-10gb",
+    name: "10GB",
+    network: "glo",
+    amount: 3000,
+    validity: "30 days",
+    description: "10GB 30 days",
+  },
 
-  { code: "9mobile-1gb", name: "1GB", network: "9mobile", amount: 350, validity: "30 days", description: "1GB 30 days" },
-  { code: "9mobile-2gb", name: "2GB", network: "9mobile", amount: 700, validity: "30 days", description: "2GB 30 days" },
-  { code: "9mobile-3gb", name: "3GB", network: "9mobile", amount: 1000, validity: "30 days", description: "3GB 30 days" },
-  { code: "9mobile-5gb", name: "5GB", network: "9mobile", amount: 1500, validity: "30 days", description: "5GB 30 days" },
-  { code: "9mobile-10gb", name: "10GB", network: "9mobile", amount: 3000, validity: "30 days", description: "10GB 30 days" },
+  {
+    code: "9mobile-1gb",
+    name: "1GB",
+    network: "9mobile",
+    amount: 350,
+    validity: "30 days",
+    description: "1GB 30 days",
+  },
+  {
+    code: "9mobile-2gb",
+    name: "2GB",
+    network: "9mobile",
+    amount: 700,
+    validity: "30 days",
+    description: "2GB 30 days",
+  },
+  {
+    code: "9mobile-3gb",
+    name: "3GB",
+    network: "9mobile",
+    amount: 1000,
+    validity: "30 days",
+    description: "3GB 30 days",
+  },
+  {
+    code: "9mobile-5gb",
+    name: "5GB",
+    network: "9mobile",
+    amount: 1500,
+    validity: "30 days",
+    description: "5GB 30 days",
+  },
+  {
+    code: "9mobile-10gb",
+    name: "10GB",
+    network: "9mobile",
+    amount: 3000,
+    validity: "30 days",
+    description: "10GB 30 days",
+  },
 ];
 
 export const AIRTIME_AMOUNTS = [100, 200, 500, 1000, 2000, 3000, 5000];

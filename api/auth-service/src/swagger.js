@@ -38,14 +38,34 @@ const options = {
         User: {
           type: "object",
           properties: {
-            id: { type: "string", format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" },
-            email: { type: "string", format: "email", example: "john@example.com" },
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "550e8400-e29b-41d4-a716-446655440000",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "john@example.com",
+            },
             firstName: { type: "string", example: "John" },
             lastName: { type: "string", example: "Doe" },
             phone: { type: "string", nullable: true, example: "+1234567890" },
             isEmailVerified: { type: "boolean", example: true },
             isActive: { type: "boolean", example: true },
-            role: { type: "string", enum: ["USER", "ADMIN"], example: "USER" },
+            role: {
+              type: "string",
+              enum: [
+                "USER",
+                "ADMIN",
+                "AGENT",
+                "MERCHANT",
+                "RESELLER",
+                "DISTRIBUTOR",
+                "SUB_RESELLER",
+              ],
+              example: "USER",
+            },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },
@@ -53,8 +73,14 @@ const options = {
         AuthTokens: {
           type: "object",
           properties: {
-            accessToken: { type: "string", description: "JWT access token (15min expiry)" },
-            refreshToken: { type: "string", description: "JWT refresh token (7d expiry)" },
+            accessToken: {
+              type: "string",
+              description: "JWT access token (15min expiry)",
+            },
+            refreshToken: {
+              type: "string",
+              description: "JWT refresh token (7d expiry)",
+            },
           },
         },
         SuccessResponse: {
@@ -86,8 +112,17 @@ const options = {
           type: "object",
           required: ["email", "password", "firstName", "lastName"],
           properties: {
-            email: { type: "string", format: "email", example: "john@example.com" },
-            password: { type: "string", format: "password", minLength: 8, example: "Password123" },
+            email: {
+              type: "string",
+              format: "email",
+              example: "john@example.com",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 8,
+              example: "Password123",
+            },
             firstName: { type: "string", example: "John" },
             lastName: { type: "string", example: "Doe" },
             phone: { type: "string", example: "+1234567890" },
@@ -97,8 +132,16 @@ const options = {
           type: "object",
           required: ["email", "password"],
           properties: {
-            email: { type: "string", format: "email", example: "john@example.com" },
-            password: { type: "string", format: "password", example: "Password123" },
+            email: {
+              type: "string",
+              format: "email",
+              example: "john@example.com",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              example: "Password123",
+            },
           },
         },
         RefreshRequest: {
@@ -119,15 +162,27 @@ const options = {
           type: "object",
           required: ["email"],
           properties: {
-            email: { type: "string", format: "email", example: "john@example.com" },
+            email: {
+              type: "string",
+              format: "email",
+              example: "john@example.com",
+            },
           },
         },
         ResetPasswordRequest: {
           type: "object",
           required: ["token", "password"],
           properties: {
-            token: { type: "string", description: "Password reset token from email" },
-            password: { type: "string", format: "password", minLength: 8, example: "NewPassword123" },
+            token: {
+              type: "string",
+              description: "Password reset token from email",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 8,
+              example: "NewPassword123",
+            },
           },
         },
         UpdateProfileRequest: {

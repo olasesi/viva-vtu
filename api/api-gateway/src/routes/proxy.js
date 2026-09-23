@@ -15,15 +15,20 @@ const createServiceProxy = (target, pathRewrite) => {
     proxyTimeout: 30000,
     on: {
       proxyReq: (proxyReq, req) => {
-        logger.info(`Proxying ${req.method} ${req.originalUrl} -> ${target}${proxyReq.path}`);
+        logger.info(
+          `Proxying ${req.method} ${req.originalUrl} -> ${target}${proxyReq.path}`,
+        );
         if (req.user) {
           proxyReq.setHeader("X-User-Id", req.user.id || req.user.sub || "");
           proxyReq.setHeader("X-User-Email", req.user.email || "");
+          proxyReq.setHeader("X-User-Role", req.user.role || "");
           proxyReq.setHeader("X-Forwarded-User", JSON.stringify(req.user));
         }
       },
       proxyRes: (proxyRes, req) => {
-        logger.debug(`Response from ${target}${req.originalUrl}: ${proxyRes.statusCode}`);
+        logger.debug(
+          `Response from ${target}${req.originalUrl}: ${proxyRes.statusCode}`,
+        );
       },
       error: (err, req, res) => {
         logger.error("Proxy error:", {

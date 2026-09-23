@@ -1,7 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { User, Mail, Phone, Shield, Calendar, Save } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { ROLE_LABELS } from "@/lib/constants";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -26,15 +33,18 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="bg-primary text-white text-xl">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>{user?.firstName} {user?.lastName}</CardTitle>
+              <CardTitle>
+                {user?.firstName} {user?.lastName}
+              </CardTitle>
               <CardDescription>{user?.email}</CardDescription>
               <Badge variant="outline" className="mt-1">
                 <Shield className="h-3 w-3 mr-1" />
-                {user?.role === "admin" ? "Administrator" : "User"}
+                {user?.role ? (ROLE_LABELS[user.role] ?? "User") : "User"}
               </Badge>
             </div>
           </div>
@@ -45,14 +55,22 @@ export default function ProfilePage() {
               <Label>First Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input defaultValue={user?.firstName} className="pl-10" readOnly />
+                <Input
+                  defaultValue={user?.firstName}
+                  className="pl-10"
+                  readOnly
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Last Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input defaultValue={user?.lastName} className="pl-10" readOnly />
+                <Input
+                  defaultValue={user?.lastName}
+                  className="pl-10"
+                  readOnly
+                />
               </div>
             </div>
           </div>
@@ -69,7 +87,11 @@ export default function ProfilePage() {
             <Label>Phone Number</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input defaultValue={user?.phone || "Not set"} className="pl-10" readOnly />
+              <Input
+                defaultValue={user?.phone || "Not set"}
+                className="pl-10"
+                readOnly
+              />
             </div>
           </div>
 
