@@ -2,6 +2,7 @@ const Bull = require("bull");
 const config = require("../config");
 const logger = require("../config/logger");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("../utils/email");
+const { emailQueueJobs } = require("../config/metrics");
 
 const emailQueue = new Bull("email", {
   redis: {
@@ -35,10 +36,12 @@ emailQueue.process("reset-password", async (job) => {
 });
 
 emailQueue.on("completed", (job) => {
+  emailQueueJobs.inc({ type: job.name, result: "completed" });
   logger.info(`Email job ${job.id} completed for ${job.data.user?.email || "unknown"}`);
 });
 
 emailQueue.on("failed", (job, err) => {
+  emailQueueJobs.inc({ type: job.name, result: "failed" });
   logger.error(`Email job ${job.id} failed after ${job.attemptsMade} attempts:`, {
     error: err.message,
     email: job.data.user?.email,

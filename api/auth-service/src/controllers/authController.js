@@ -1,17 +1,35 @@
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
 const AppError = require("../utils/AppError");
-const { generateCryptoToken, hashToken, prisma, redis } = require("../utils/tokenUtils");
+const { generateCryptoToken, hashToken, prisma } = require("../utils/tokenUtils");
 const {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  verifyAccessToken,
   blacklistToken,
+  isTokenBlacklisted,
 } = require("../utils/tokenUtils");
 const { queueVerificationEmail, queueResetPasswordEmail } = require("../services/emailQueue");
+const {
+  userRegistrationsTotal,
+  userLoginsTotal,
+  refreshTokensIssuedTotal,
+  tokenVerificationsTotal,
+  passwordResetsTotal,
+  emailVerificationsTotal,
+} = require("../config/metrics");
 
 const sanitizeUser = (user) => {
-  const { password, emailVerificationToken, emailVerificationExpiry, passwordResetToken, passwordResetExpiry, ...safe } = user;
+  /* eslint-disable no-unused-vars */
+  const {
+    password,
+    emailVerificationToken,
+    emailVerificationExpiry,
+    passwordResetToken,
+    passwordResetExpiry,
+    ...safe
+  } = user;
+  /* eslint-enable no-unused-vars */
   return safe;
 };
 
@@ -55,8 +73,11 @@ const register = async (req, res, next) => {
 
     await queueVerificationEmail(
       { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-      verificationToken
+      verificationToken,
     );
+
+    userRegistrationsTotal.inc();
+    refreshTokensIssuedTotal.inc();
 
     res.status(201).json({
       status: "success",
@@ -92,6 +113,9 @@ const login = async (req, res, next) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user);
+
+    userLoginsTotal.inc();
+    refreshTokensIssuedTotal.inc();
 
     res.status(200).json({
       status: "success",
@@ -150,7 +174,7 @@ const refreshToken = async (req, res, next) => {
     const decoded = await verifyRefreshToken(token);
 
     await prisma.refreshToken.deleteMany({
-      where: { token },
+      where: { token: hashToken(token) },
     });
 
     const user = await prisma.user.findUnique({
@@ -167,6 +191,8 @@ const refreshToken = async (req, res, next) => {
 
     const newAccessToken = generateAccessToken(user);
     const newRefreshToken = await generateRefreshToken(user);
+
+    refreshTokensIssuedTotal.inc();
 
     res.status(200).json({
       status: "success",
@@ -221,6 +247,8 @@ const verifyEmail = async (req, res, next) => {
       },
     });
 
+    emailVerificationsTotal.inc();
+
     res.status(200).json({
       status: "success",
       message: "Email verified successfully",
@@ -258,7 +286,7 @@ const forgotPassword = async (req, res, next) => {
 
     await queueResetPasswordEmail(
       { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-      resetToken
+      resetToken,
     );
 
     res.status(200).json({
@@ -309,6 +337,8 @@ const resetPassword = async (req, res, next) => {
     await prisma.refreshToken.deleteMany({
       where: { userId: user.id },
     });
+
+    passwordResetsTotal.inc();
 
     res.status(200).json({
       status: "success",
@@ -382,11 +412,97 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const verify = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      tokenVerificationsTotal.inc({ result: "missing" });
+      return res.status(401).json({
+        success: false,
+        message: "Authentication token is required",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const blacklisted = await isTokenBlacklisted(token);
+    if (blacklisted) {
+      tokenVerificationsTotal.inc({ result: "revoked" });
+      return res.status(401).json({
+        success: false,
+        message: "Token has been revoked. Please log in again.",
+      });
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        isEmailVerified: true,
+        isActive: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      tokenVerificationsTotal.inc({ result: "invalid" });
+      return res.status(401).json({
+        success: false,
+        message: "User not found. Please log in again.",
+      });
+    }
+
+    if (!user.isActive) {
+      tokenVerificationsTotal.inc({ result: "deactivated" });
+      return res.status(403).json({
+        success: false,
+        message: "Account has been deactivated. Please contact support.",
+      });
+    }
+
+    tokenVerificationsTotal.inc({ result: "valid" });
+
+    res.status(200).json({
+      success: true,
+      message: "Token is valid",
+      user,
+    });
+  } catch (error) {
+    if (error.name === "JsonWebTokenError") {
+      tokenVerificationsTotal.inc({ result: "invalid" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication token",
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      tokenVerificationsTotal.inc({ result: "expired" });
+      return res.status(401).json({
+        success: false,
+        message: "Token has expired. Please log in again.",
+      });
+    }
+
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   refreshToken,
+  verify,
   verifyEmail,
   forgotPassword,
   resetPassword,

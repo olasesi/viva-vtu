@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: auth-service
+  namespace: viva-vtu
+  labels:
+    app: auth-service
+    release: prometheus
+spec:
+  groups:
+    - name: auth-service
+      rules:
+        - alert: AuthServiceDown
+          expr: up{job="auth-service"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: "Auth service is down"
+            description: "auth-service has been unreachable for more than 2 minutes."
+        - alert: AuthServiceHigh5xxRate
+          expr: sum(rate(auth_service_http_requests_total{status_code=~"5.."}[5m])) / sum(rate(auth_service_http_requests_total[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "Auth service returning >5% 5xx errors"
+            description: "auth-service 5xx rate exceeded 5% over the last 5 minutes."
+        - alert: AuthServiceHighLatency
+          expr: histogram_quantile(0.95, sum(rate(auth_service_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "Auth service p95 latency above 1s"
+            description: "auth-service p95 request latency exceeded 1 second over 5 minutes."
+        - alert: AuthServiceLoginFailuresSpike
+          expr: sum(rate(auth_service_token_verifications_total{result="invalid"}[5m])) > 20
+          for: 5m
+          labels:
+            severity: info
+            team: security
+          annotations:
+            summary: "Token verification invalid-rate elevated"
+            description: "Invalid token verification alerts exceeded 20/min, possibly credential stuffing."
+        - alert: AuthServicePodCrashLooping
+          expr: kube_pod_container_status_restarts_total{namespace="viva-vtu", container="auth-service"} > 5
+          for: 10m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "auth-service pod restarting repeatedly"
+            description: "Container auth-service has restarted more than 5 times in 10 minutes."

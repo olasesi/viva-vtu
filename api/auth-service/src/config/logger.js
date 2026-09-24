@@ -21,7 +21,7 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     winston.format.errors({ stack: true }),
-    customFormat
+    customFormat,
   ),
   defaultMeta: { service: "auth-service" },
   transports: [
@@ -52,9 +52,9 @@ if (config.nodeEnv !== "production") {
         winston.format.printf(({ timestamp, level, message, ...meta }) => {
           const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : "";
           return `${timestamp} ${level}: ${message}${metaStr}`;
-        })
+        }),
       ),
-    })
+    }),
   );
 }
 

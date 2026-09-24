@@ -1,0 +1,19 @@
+process.env.NODE_ENV = "test";
+process.env.PORT = "0";
+process.env.LOG_LEVEL = "silent";
+process.env.LOG_DIR = require("path").join(require("os").tmpdir(), "viva-vtu-auth-test-logs");
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || "mysql://root:@127.0.0.1:3306/viva_vtu_auth_test";
+process.env.JWT_ACCESS_SECRET = "test-access-secret";
+process.env.JWT_ACCESS_EXPIRY = "15m";
+process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
+process.env.JWT_REFRESH_EXPIRY = "1d";
+process.env.REDIS_HOST = "127.0.0.1";
+process.env.REDIS_PORT = "6379";
+process.env.REDIS_PASSWORD = "";
+process.env.SMTP_HOST = "smtp.test.local";
+process.env.SMTP_PORT = "2525";
+process.env.SMTP_USER = "";
+process.env.SMTP_PASS = "";
+process.env.MAIL_FROM = "noreply@test.vivavtu.com";
+process.env.FRONTEND_URL = "http://localhost:3000";

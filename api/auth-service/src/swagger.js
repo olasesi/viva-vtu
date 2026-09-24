@@ -204,6 +204,61 @@ const options = {
         },
       },
     },
+    paths: {
+      "/api/auth/verify": {
+        post: {
+          summary: "Verify an access token",
+          description:
+            "Validates a bearer token and returns the authenticated user. Consumed by the API gateway and downstream services (e.g. laravel-service VerifyJwtToken middleware). Returns role in the canonical role set (USER, ADMIN, AGENT, MERCHANT, RESELLER, DISTRIBUTOR, SUB_RESELLER).",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "Token is valid",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string" },
+                      user: { $ref: "#/components/schemas/User" },
+                    },
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Invalid, expired, or revoked token",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: false },
+                      message: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+            403: {
+              description: "Account deactivated",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: false },
+                      message: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   apis: [],
 };

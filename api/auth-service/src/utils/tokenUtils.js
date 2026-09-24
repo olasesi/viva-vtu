@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const config = require("../config");
+const AppError = require("./AppError");
 const { PrismaClient } = require("@prisma/client");
 const Redis = require("ioredis");
 
@@ -33,6 +34,7 @@ const generateRefreshToken = async (user) => {
   const payload = {
     id: user.id,
     type: "refresh",
+    jti: crypto.randomUUID(),
   };
 
   const token = jwt.sign(payload, config.jwt.refreshSecret, {
@@ -44,7 +46,7 @@ const generateRefreshToken = async (user) => {
 
   await prisma.refreshToken.create({
     data: {
-      token,
+      token: hashToken(token),
       userId: user.id,
       expiresAt,
     },
@@ -61,16 +63,16 @@ const verifyRefreshToken = async (token) => {
   const decoded = jwt.verify(token, config.jwt.refreshSecret);
 
   const storedToken = await prisma.refreshToken.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
   });
 
   if (!storedToken) {
-    throw new Error("Refresh token not found in database");
+    throw new AppError("Refresh token not found in database", 401);
   }
 
   if (new Date() > storedToken.expiresAt) {
     await prisma.refreshToken.delete({ where: { id: storedToken.id } });
-    throw new Error("Refresh token has expired");
+    throw new AppError("Refresh token has expired", 401);
   }
 
   return decoded;

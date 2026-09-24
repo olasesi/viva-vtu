@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: viva-vtu
+  labels:
+    app: viva-vtu
+    environment: production

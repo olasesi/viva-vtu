@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-auth-service
+  namespace: viva-vtu
+  labels:
+    grafana_dashboard: "1"
+    app: auth-service
+data:
+  auth-service.json: |
+    {
+      "id": null,
+      "uid": "auth-service-overview",
+      "title": "Auth Service Overview",
+      "tags": ["auth", "backend", "viva-vtu"],
+      "timezone": "browser",
+      "editable": true,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] },
+              "unit": "reqps"
+            }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "Request Rate",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "sum(rate(auth_service_http_requests_total[5m]))", "legendFormat": "all" },
+            { "expr": "sum(rate(auth_service_http_requests_total{status_code=~\"5..\"}[5m]))", "legendFormat": "5xx" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "s" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 6, "y": 0 },
+          "id": 2,
+          "title": "Request Latency (p50/p95/p99)",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "histogram_quantile(0.50, sum(rate(auth_service_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
+            { "expr": "histogram_quantile(0.95, sum(rate(auth_service_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95" },
+            { "expr": "histogram_quantile(0.99, sum(rate(auth_service_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 5 }, { "color": "red", "value": 10 } ] }
+            }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 12, "y": 0 },
+          "id": 3,
+          "title": "Auth Service Uptime",
+          "type": "stat",
+          "targets": [ { "expr": "up{job=\"auth-service\"}", "legendFormat": "up" } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 18, "y": 0 },
+          "id": 4,
+          "title": "Registrations / Logins / Refreshes",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "sum(rate(auth_service_user_registrations_total[5m]))", "legendFormat": "registrations" },
+            { "expr": "sum(rate(auth_service_user_logins_total[5m]))", "legendFormat": "logins" },
+            { "expr": "sum(rate(auth_service_refresh_tokens_issued_total[5m]))", "legendFormat": "refresh" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 0, "y": 7 },
+          "id": 5,
+          "title": "Token Verification Results",
+          "type": "bar gauge",
+          "targets": [
+            { "expr": "sum(rate(auth_service_token_verifications_total[5m])) by (result)", "legendFormat": "{{result}}" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 6, "y": 7 },
+          "id": 6,
+          "title": "Email Queue Job Results",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "sum(rate(auth_service_email_queue_jobs_total[5m])) by (type, result)", "legendFormat": "{{type}} {{result}}" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 12, "y": 7 },
+          "id": 7,
+          "title": "Node.js Memory",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "nodejs_heap_size_total_bytes{job=\"auth-service\"}", "legendFormat": "heap" }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "percentunit" }
+          },
+          "gridPos": { "h": 7, "w": 6, "x": 18, "y": 7 },
+          "id": 8,
+          "title": "Error Rate (5xx ratio)",
+          "type": "timeseries",
+          "targets": [
+            { "expr": "sum(rate(auth_service_http_requests_total{status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(auth_service_http_requests_total[5m])), 0.001)", "legendFormat": "5xx ratio" }
+          ]
+        }
+      ]
+    }

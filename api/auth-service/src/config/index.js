@@ -40,6 +40,11 @@ const config = {
     level: process.env.LOG_LEVEL || "info",
     dir: process.env.LOG_DIR || "logs",
   },
+
+  sentry: {
+    dsn: process.env.SENTRY_DSN || "",
+    tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE || "0.1",
+  },
 };
 
 module.exports = config;
