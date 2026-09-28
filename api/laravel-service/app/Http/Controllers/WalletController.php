@@ -79,6 +79,79 @@ class WalletController extends Controller
         ]);
     }
 
+    public function verify(Request $request, string $reference): JsonResponse
+    {
+        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
+
+        if (! $userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (! $reference) {
+            return response()->json(['success' => false, 'message' => 'Reference required'], 422);
+        }
+
+        $result = $this->paystackService->verifyTransaction($reference);
+
+        if ($result === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to verify transaction with payment provider',
+            ], 502);
+        }
+
+        if (! isset($result['status']) || $result['status'] !== true) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Transaction verification failed',
+            ], 400);
+        }
+
+        $data = $result['data'] ?? [];
+        $paymentStatus = strtolower((string) ($data['status'] ?? ''));
+
+        if ($paymentStatus !== 'success') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not successful',
+                'data' => ['status' => $paymentStatus],
+            ], 400);
+        }
+
+        $amount = isset($data['amount']) ? round(((float) $data['amount']) / 100, 2) : 0;
+        $providerReference = $data['id'] ?? null;
+
+        $credited = $this->walletService->credit(
+            $userId,
+            $amount,
+            $reference,
+            'Wallet funding via Paystack'
+        );
+
+        $transaction = Transaction::where('reference', $reference)->first();
+
+        if (! $transaction || (! $credited && $transaction->status !== 'successful')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment verified but wallet credit failed',
+            ], 500);
+        }
+
+        if ($providerReference && $transaction->provider_reference === null) {
+            $transaction->update(['provider_reference' => $providerReference]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment verified',
+            'data' => [
+                'balance' => $this->walletService->getBalance($userId),
+                'currency' => 'NGN',
+                'transaction' => $transaction,
+            ],
+        ]);
+    }
+
     public function history(Request $request): JsonResponse
     {
         $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;

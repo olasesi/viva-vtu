@@ -303,3 +303,180 @@ it('validates required fields for airtime purchase', function () {
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['phone_number', 'amount', 'network']);
 });
+
+it('credits the wallet when a paystack payment verifies successfully', function () {
+    $user = User::factory()->create();
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('verifyTransaction')
+            ->once()
+            ->with('VIVATU-verify-001')
+            ->andReturn([
+                'status' => true,
+                'message' => 'Verification successful',
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 100000,
+                    'id' => 987654321,
+                    'reference' => 'VIVATU-verify-001',
+                ],
+            ]);
+    });
+
+    $response = $this->actingAs($user, 'api')
+        ->getJson('/api/wallet/verify/VIVATU-verify-001');
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'data' => [
+                'balance' => 1000.00,
+                'currency' => 'NGN',
+            ],
+        ]);
+
+    $this->assertDatabaseHas('wallets', [
+        'user_id' => $user->id,
+        'balance' => 1000.00,
+    ]);
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'reference' => 'VIVATU-verify-001',
+        'amount' => 1000.00,
+        'status' => 'successful',
+        'provider_reference' => 987654321,
+    ]);
+});
+
+it('does not double-credit when the webhook already applied the funding', function () {
+    $user = User::factory()->create();
+    $wallet = Wallet::create([
+        'user_id' => $user->id,
+        'balance' => 1000.00,
+        'currency' => 'NGN',
+    ]);
+
+    Transaction::create([
+        'user_id' => $user->id,
+        'wallet_id' => $wallet->id,
+        'type' => 'credit',
+        'category' => 'wallet_fund',
+        'reference' => 'VIVATU-verify-002',
+        'description' => 'Wallet funding via Paystack',
+        'amount' => 1000.00,
+        'status' => 'successful',
+        'completed_at' => now(),
+    ]);
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('verifyTransaction')
+            ->once()
+            ->with('VIVATU-verify-002')
+            ->andReturn([
+                'status' => true,
+                'message' => 'Verification successful',
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 100000,
+                    'id' => 987654322,
+                    'reference' => 'VIVATU-verify-002',
+                ],
+            ]);
+    });
+
+    $response = $this->actingAs($user, 'api')
+        ->getJson('/api/wallet/verify/VIVATU-verify-002');
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'data' => [
+                'balance' => 1000.00,
+            ],
+        ]);
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'reference' => 'VIVATU-verify-002',
+    ]);
+
+    $this->assertDatabaseCount('transactions', 1);
+});
+
+it('returns 502 when the payment provider is unreachable', function () {
+    $user = User::factory()->create();
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('verifyTransaction')
+            ->once()
+            ->with('VIVATU-verify-003')
+            ->andReturn(null);
+    });
+
+    $response = $this->actingAs($user, 'api')
+        ->getJson('/api/wallet/verify/VIVATU-verify-003');
+
+    $response->assertStatus(502)
+        ->assertJson([
+            'success' => false,
+        ]);
+});
+
+it('returns 400 when the provider rejects the reference', function () {
+    $user = User::factory()->create();
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('verifyTransaction')
+            ->once()
+            ->with('VIVATU-verify-004')
+            ->andReturn([
+                'status' => false,
+                'message' => 'Invalid reference',
+                'data' => [],
+            ]);
+    });
+
+    $response = $this->actingAs($user, 'api')
+        ->getJson('/api/wallet/verify/VIVATU-verify-004');
+
+    $response->assertStatus(400)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Invalid reference',
+        ]);
+});
+
+it('returns 400 when the payment was not successful', function () {
+    $user = User::factory()->create();
+
+    $this->mock(PaystackService::class, function ($mock) {
+        $mock->shouldReceive('verifyTransaction')
+            ->once()
+            ->with('VIVATU-verify-005')
+            ->andReturn([
+                'status' => true,
+                'message' => 'Verification successful',
+                'data' => [
+                    'status' => 'abandoned',
+                    'amount' => 100000,
+                    'reference' => 'VIVATU-verify-005',
+                ],
+            ]);
+    });
+
+    $response = $this->actingAs($user, 'api')
+        ->getJson('/api/wallet/verify/VIVATU-verify-005');
+
+    $response->assertStatus(400)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Payment not successful',
+        ]);
+});
+
+it('rejects unauthenticated wallet verify request', function () {
+    $response = $this->getJson('/api/wallet/verify/VIVATU-verify-006');
+
+    $response->assertStatus(401);
+});

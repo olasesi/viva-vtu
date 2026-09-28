@@ -18,6 +18,7 @@ Route::middleware('jwt.verify')->group(function () {
     Route::prefix('wallet')->group(function () {
         Route::get('/balance', [WalletController::class, 'getBalance']);
         Route::post('/fund', [WalletController::class, 'fund']);
+        Route::get('/verify/{reference}', [WalletController::class, 'verify']);
         Route::get('/history', [WalletController::class, 'history']);
     });
 
