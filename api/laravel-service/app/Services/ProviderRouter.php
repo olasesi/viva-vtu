@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ServiceProvider;
+use App\Models\Setting;
 use App\Services\Providers\ProviderContract;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,8 @@ class ProviderRouter
 
     protected const TRIPPED_KEY = 'aggregator_tripped_at:%s';
 
+    protected ?array $runtimeApiSettings = null;
+
     /**
      * Enabled, healthy provider instances for a category, in priority order.
      *
@@ -22,7 +25,7 @@ class ProviderRouter
     {
         $providers = [];
 
-        foreach ((array) config('aggregators.routing.'.$category, []) as $slug) {
+        foreach ($this->routingOrderFor($category) as $slug) {
             if (! $this->isEnabled($slug) || ! $this->isHealthy($slug)) {
                 continue;
             }
@@ -46,7 +49,60 @@ class ProviderRouter
             return null;
         }
 
+        $config = $this->withRuntimeCredentials($slug, $config);
+
         return new $config['class']($config);
+    }
+
+    protected function routingOrderFor(string $category): array
+    {
+        $order = array_values((array) config('aggregators.routing.'.$category, []));
+
+        $mode = $this->runtimeApiSetting('provider_mode', 'auto');
+
+        $forced = match ($mode) {
+            'aida' => 'aidapay',
+            'easy_access' => 'easyaccess',
+            default => null,
+        };
+
+        if ($forced && in_array($forced, $order, true)) {
+            $order = array_values(array_diff($order, [$forced]));
+            array_unshift($order, $forced);
+        }
+
+        return $order;
+    }
+
+    protected function withRuntimeCredentials(string $slug, array $config): array
+    {
+        $settings = $this->runtimeApiSettings();
+
+        if ($slug === 'aidapay') {
+            if (! empty($settings['aida_base_url'])) {
+                $config['base_url'] = $settings['aida_base_url'];
+            }
+
+            if (! empty($settings['aida_secret_key'])) {
+                $config['api_token'] = $settings['aida_secret_key'];
+            }
+
+            if (! empty($settings['aida_account_pin'])) {
+                $config['account_pin'] = $settings['aida_account_pin'];
+            }
+        }
+
+        if ($slug === 'easyaccess') {
+            if (! empty($settings['easy_access_base_url'])) {
+                $config['base_url'] = $settings['easy_access_base_url'];
+            }
+
+            if (! empty($settings['easy_access_token'])) {
+                $config['api_token'] = $settings['easy_access_token'];
+            }
+        }
+
+        return $config;
     }
 
     public function markSuccess(string $slug): void
@@ -79,7 +135,28 @@ class ProviderRouter
             return (bool) $row->is_active;
         }
 
+        if ($slug === 'easyaccess'
+            && Setting::group('api')->forKey('easy_access_enabled')->exists()) {
+            return $this->runtimeApiSetting('easy_access_enabled', false);
+        }
+
         return (bool) (config('aggregators.providers.'.$slug.'.enabled', true));
+    }
+
+    protected function runtimeApiSettings(): array
+    {
+        if ($this->runtimeApiSettings === null) {
+            $this->runtimeApiSettings = app(SettingService::class)->defaultsMergedWithStored('api');
+        }
+
+        return $this->runtimeApiSettings;
+    }
+
+    protected function runtimeApiSetting(string $key, mixed $default): mixed
+    {
+        $settings = $this->runtimeApiSettings();
+
+        return $settings[$key] ?? $default;
     }
 
     protected function isHealthy(string $slug): bool

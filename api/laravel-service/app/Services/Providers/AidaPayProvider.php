@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * purchase response is reported as ambiguous (code '999') and resolved later
  * via requery or webhook to avoid double delivery on failover.
  */
-class AidaPayProvider
+class AidaPayProvider implements ProviderContract
 {
     use NormalizesProviderCodes;
 

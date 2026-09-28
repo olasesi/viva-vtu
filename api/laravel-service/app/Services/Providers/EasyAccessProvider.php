@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  * both `{ success, data }` and `{ code, content }` envelopes. Keep this
  * provider disabled until verified against their live API.
  */
-class EasyAccessProvider
+class EasyAccessProvider implements ProviderContract
 {
     protected Client $client;
 
