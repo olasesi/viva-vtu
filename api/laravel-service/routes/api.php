@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
@@ -55,4 +56,10 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('settings')->group(function (
     Route::get('/{group}', [SettingController::class, 'show']);
     Route::get('/{group}/schema', [SettingController::class, 'schema']);
     Route::post('/{group}', [SettingController::class, 'update']);
+});
+
+Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/users', [AdminController::class, 'users']);
+    Route::get('/transactions', [AdminController::class, 'transactions']);
+    Route::get('/stats', [AdminController::class, 'stats']);
 });
