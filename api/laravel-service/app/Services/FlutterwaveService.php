@@ -102,6 +102,31 @@ class FlutterwaveService
         }
     }
 
+    public function verifyByReference(string $txRef): ?array
+    {
+        try {
+            $response = $this->client->get('/transactions/verify_by_reference', [
+                'query' => ['tx_ref' => $txRef],
+            ]);
+
+            $body = json_decode($response->getBody()->getContents(), true);
+
+            Log::info('Flutterwave transaction verified by reference', [
+                'tx_ref' => $txRef,
+                'status' => $body['data']['status'] ?? null,
+            ]);
+
+            return $body;
+        } catch (GuzzleException $e) {
+            Log::error('Flutterwave transaction verification failed by reference', [
+                'tx_ref' => $txRef,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function initiateTransfer(float $amount, string $currency, string $bankCode, string $accountNumber, string $accountName): ?array
     {
         $payLoad = [

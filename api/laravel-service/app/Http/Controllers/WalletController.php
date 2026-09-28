@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Models\User;
+use App\Services\FlutterwaveService;
 use App\Services\PaystackService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class WalletController extends Controller
 {
@@ -14,10 +17,13 @@ class WalletController extends Controller
 
     protected PaystackService $paystackService;
 
-    public function __construct(WalletService $walletService, PaystackService $paystackService)
+    protected FlutterwaveService $flutterwaveService;
+
+    public function __construct(WalletService $walletService, PaystackService $paystackService, FlutterwaveService $flutterwaveService)
     {
         $this->walletService = $walletService;
         $this->paystackService = $paystackService;
+        $this->flutterwaveService = $flutterwaveService;
     }
 
     public function getBalance(Request $request): JsonResponse
@@ -49,16 +55,41 @@ class WalletController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:100|max:500000',
-            'email' => 'required|email',
+            'email' => 'nullable|email',
+            'payment_method' => 'nullable|in:paystack,flutterwave',
+            'paymentMethod' => 'nullable|in:paystack,flutterwave',
         ]);
 
-        $amount = $validated['amount'];
-        $email = $validated['email'];
+        $amount = (float) $validated['amount'];
+        $method = $validated['payment_method'] ?? $validated['paymentMethod'] ?? 'paystack';
+
+        $email = $validated['email'] ?? $request->input('auth_user.email');
+
+        if (! $email) {
+            $email = User::where('id', $userId)->value('email');
+        }
+
+        if (! $email) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email is required to initialize payment',
+            ], 422);
+        }
+
         $metadata = [
             'user_id' => $userId,
             'type' => 'wallet_fund',
         ];
 
+        if ($method === 'flutterwave') {
+            return $this->initializeFlutterwaveFunding($userId, $amount, $email, $metadata);
+        }
+
+        return $this->initializePaystackFunding($userId, $amount, $email, $metadata);
+    }
+
+    protected function initializePaystackFunding(int $userId, float $amount, string $email, array $metadata): JsonResponse
+    {
         $result = $this->paystackService->initializeTransaction($amount, $email, $metadata);
 
         if (! isset($result['status']) || $result['status'] !== true) {
@@ -68,15 +99,69 @@ class WalletController extends Controller
             ], 400);
         }
 
+        $reference = $result['data']['reference'] ?? null;
+
+        if ($reference) {
+            $this->recordPendingFunding($userId, $amount, $reference, 'paystack', 'Wallet funding via Paystack');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Payment initialized',
             'data' => [
                 'authorization_url' => $result['data']['authorization_url'] ?? null,
                 'access_code' => $result['data']['access_code'] ?? null,
-                'reference' => $result['data']['reference'] ?? null,
+                'reference' => $reference,
+                'payment_method' => 'paystack',
             ],
         ]);
+    }
+
+    protected function initializeFlutterwaveFunding(int $userId, float $amount, string $email, array $metadata): JsonResponse
+    {
+        $txRef = 'VIVATU-FLW-'.strtoupper(Str::random(16));
+
+        $result = $this->flutterwaveService->initializePayment($amount, 'NGN', $email, $txRef, $metadata);
+
+        if (! isset($result['status']) || $result['status'] !== 'success') {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Failed to initialize payment',
+            ], 400);
+        }
+
+        $reference = $result['data']['tx_ref'] ?? $txRef;
+
+        $this->recordPendingFunding($userId, $amount, $reference, 'flutterwave', 'Wallet funding via Flutterwave');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment initialized',
+            'data' => [
+                'authorization_url' => $result['data']['link'] ?? null,
+                'reference' => $reference,
+                'payment_method' => 'flutterwave',
+            ],
+        ]);
+    }
+
+    protected function recordPendingFunding(int $userId, float $amount, string $reference, string $provider, string $description): void
+    {
+        $wallet = $this->walletService->ensureWalletExists($userId);
+
+        Transaction::firstOrCreate(
+            ['reference' => $reference],
+            [
+                'user_id' => $userId,
+                'wallet_id' => $wallet->id,
+                'type' => 'credit',
+                'category' => 'wallet_fund',
+                'description' => $description,
+                'amount' => $amount,
+                'status' => 'pending',
+                'provider' => $provider,
+            ]
+        );
     }
 
     public function verify(Request $request, string $reference): JsonResponse
@@ -91,6 +176,18 @@ class WalletController extends Controller
             return response()->json(['success' => false, 'message' => 'Reference required'], 422);
         }
 
+        $transaction = Transaction::where('reference', $reference)->first();
+        $provider = $transaction->provider ?? 'paystack';
+
+        if ($provider === 'flutterwave') {
+            return $this->verifyFlutterwavePayment($userId, $reference, $transaction);
+        }
+
+        return $this->verifyPaystackPayment($userId, $reference, $transaction);
+    }
+
+    protected function verifyPaystackPayment(int $userId, string $reference, ?Transaction $transaction): JsonResponse
+    {
         $result = $this->paystackService->verifyTransaction($reference);
 
         if ($result === null) {
@@ -121,11 +218,51 @@ class WalletController extends Controller
         $amount = isset($data['amount']) ? round(((float) $data['amount']) / 100, 2) : 0;
         $providerReference = $data['id'] ?? null;
 
+        return $this->completeWalletCredit($userId, $reference, $amount, $providerReference, $transaction, 'Wallet funding via Paystack');
+    }
+
+    protected function verifyFlutterwavePayment(int $userId, string $reference, ?Transaction $transaction): JsonResponse
+    {
+        $result = $this->flutterwaveService->verifyByReference($reference);
+
+        if ($result === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to verify transaction with payment provider',
+            ], 502);
+        }
+
+        if (! isset($result['status']) || $result['status'] !== 'success') {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Transaction verification failed',
+            ], 400);
+        }
+
+        $data = $result['data'] ?? [];
+        $paymentStatus = strtolower((string) ($data['status'] ?? ''));
+
+        if ($paymentStatus !== 'successful') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not successful',
+                'data' => ['status' => $paymentStatus],
+            ], 400);
+        }
+
+        $amount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0;
+        $providerReference = $data['id'] ?? null;
+
+        return $this->completeWalletCredit($userId, $reference, $amount, $providerReference, $transaction, 'Wallet funding via Flutterwave');
+    }
+
+    protected function completeWalletCredit(int $userId, string $reference, float $amount, $providerReference, ?Transaction $transaction, string $description): JsonResponse
+    {
         $credited = $this->walletService->credit(
             $userId,
             $amount,
             $reference,
-            'Wallet funding via Paystack'
+            $transaction?->description ?? $description
         );
 
         $transaction = Transaction::where('reference', $reference)->first();

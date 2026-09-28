@@ -39,12 +39,35 @@ class WalletService
 
             $existingTransaction = Transaction::where('reference', $reference)->first();
             if ($existingTransaction) {
-                Log::warning('Duplicate credit attempt detected', [
-                    'user_id' => $userId,
-                    'reference' => $reference,
+                if ($existingTransaction->status === 'successful') {
+                    Log::warning('Duplicate credit attempt detected', [
+                        'user_id' => $userId,
+                        'reference' => $reference,
+                    ]);
+
+                    return false;
+                }
+
+                $newBalance = (float) $wallet->balance + $amount;
+
+                $wallet->update(['balance' => $newBalance, 'updated_at' => now()]);
+
+                $existingTransaction->update([
+                    'amount' => $amount,
+                    'description' => $description,
+                    'status' => 'successful',
+                    'provider' => $existingTransaction->provider,
+                    'completed_at' => now(),
                 ]);
 
-                return false;
+                Log::info('Pending wallet credit confirmed', [
+                    'user_id' => $userId,
+                    'amount' => $amount,
+                    'reference' => $reference,
+                    'new_balance' => $newBalance,
+                ]);
+
+                return true;
             }
 
             $newBalance = (float) $wallet->balance + $amount;
