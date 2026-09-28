@@ -7,7 +7,7 @@ const options = {
       title: "Viva VTU API Gateway",
       version: "1.0.0",
       description:
-        "API Gateway for the Viva VTU microservices architecture. This gateway routes requests to downstream services: Auth, Billing, and Analytics.",
+        'API Gateway for the Viva VTU microservices architecture. This gateway routes requests to downstream services. Route map:\n\n| Prefix | Target service | Forwarded path |\n| --- | --- | --- |\n| /api/auth/* | Auth | path without /api/auth ("/login") |\n| /api/analytics/* | Analytics | path without /api/analytics ("/dashboard") |\n| /api/billing/* | Billing (Laravel) | "/api" + path ("/api/wallet/balance") |\n| /api/wallet/* | Billing (Laravel) | unchanged ("/api/wallet/balance") |\n| /api/purchase/* | Billing (Laravel) | unchanged |\n| /api/services/* | Billing (Laravel) | unchanged |\n| /api/transactions/* | Billing (Laravel) | unchanged |\n| /api/service-requests/* | Billing (Laravel) | unchanged |\n| /api/settings/* | Billing (Laravel) | unchanged |\n| /api/admin/* | Billing (Laravel) | unchanged |\n| /api/webhook/* | Billing (Laravel) | unchanged (no auth) |\n\nSignals: a `/health` endpoint reports gateway liveness; structured logs (Winston) cover pro/con target requests and errors.',
       contact: {
         name: "Viva VTU Team",
       },

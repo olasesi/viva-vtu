@@ -4,8 +4,6 @@ const config = require("../config");
 const { optionalAuth } = require("../middleware/authenticate");
 const logger = require("../config/logger");
 
-const router = express.Router();
-
 const createServiceProxy = (target, pathRewrite) => {
   return createProxyMiddleware({
     target,
@@ -15,9 +13,7 @@ const createServiceProxy = (target, pathRewrite) => {
     proxyTimeout: 30000,
     on: {
       proxyReq: (proxyReq, req) => {
-        logger.info(
-          `Proxying ${req.method} ${req.originalUrl} -> ${target}${proxyReq.path}`,
-        );
+        logger.info(`Proxying ${req.method} ${req.originalUrl} -> ${target}${proxyReq.path}`);
         if (req.user) {
           proxyReq.setHeader("X-User-Id", req.user.id || req.user.sub || "");
           proxyReq.setHeader("X-User-Email", req.user.email || "");
@@ -26,9 +22,7 @@ const createServiceProxy = (target, pathRewrite) => {
         }
       },
       proxyRes: (proxyRes, req) => {
-        logger.debug(
-          `Response from ${target}${req.originalUrl}: ${proxyRes.statusCode}`,
-        );
+        logger.debug(`Response from ${target}${req.originalUrl}: ${proxyRes.statusCode}`);
       },
       error: (err, req, res) => {
         logger.error("Proxy error:", {
@@ -47,20 +41,55 @@ const createServiceProxy = (target, pathRewrite) => {
   });
 };
 
-const authProxy = createServiceProxy(config.services.auth, {
-  "^/api/auth": "",
-});
+// The routing mount strips the leading path segment from req.url, but the
+// Laravel billing service is mounted at /api and expects the FULL original
+// path. Restore it so requests pass through untouched (e.g.
+// /api/wallet/balance -> http://billing/api/wallet/balance).
+const forwardOriginalPath = (path, req) => req.originalUrl;
 
-const billingProxy = createServiceProxy(config.services.billing, {
-  "^/api/billing": "",
-});
+// Legacy /api/billing/* clients: Laravel is mounted at /api, so the forwarded
+// path must be /api + the stripped remainder (e.g. /api/billing/wallet/balance
+// -> http://billing/api/wallet/balance).
+const legacyBillingRewrite = (path) => `/api${path}`;
 
-const analyticsProxy = createServiceProxy(config.services.analytics, {
-  "^/api/analytics": "",
-});
+// Prefixes forwarded straight through to Laravel (the billing service).
+const LARAVEL_PREFIXES = [
+  "wallet",
+  "purchase",
+  "services",
+  "transactions",
+  "service-requests",
+  "settings",
+  "admin",
+  "webhook",
+];
 
-router.use("/auth", optionalAuth, authProxy);
-router.use("/billing", optionalAuth, billingProxy);
-router.use("/analytics", optionalAuth, analyticsProxy);
+// npm test / unit tests: build a router with custom service targets.
+const createProxyRouter = (services = config.services) => {
+  const router = express.Router();
 
-module.exports = router;
+  const authProxy = createServiceProxy(services.auth, { "^/api/auth": "" });
+  const analyticsProxy = createServiceProxy(services.analytics, {
+    "^/api/analytics": "",
+  });
+  const legacyBillingProxy = createServiceProxy(services.billing, legacyBillingRewrite);
+  const laravelProxy = createServiceProxy(services.billing, forwardOriginalPath);
+
+  router.use("/auth", optionalAuth, authProxy);
+  router.use("/analytics", optionalAuth, analyticsProxy);
+
+  // Legacy /billing prefix, kept for backwards compatibility.
+  router.use("/billing", optionalAuth, legacyBillingProxy);
+
+  // Direct passthrough to Laravel.
+  LARAVEL_PREFIXES.forEach((prefix) => {
+    router.use(`/${prefix}`, optionalAuth, laravelProxy);
+  });
+
+  return router;
+};
+
+const proxyRouter = createProxyRouter();
+
+module.exports = proxyRouter;
+module.exports.createProxyRouter = createProxyRouter;
