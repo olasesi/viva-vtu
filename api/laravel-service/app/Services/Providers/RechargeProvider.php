@@ -4,10 +4,9 @@ namespace App\Services\Providers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-class VtpassProvider implements ProviderContract
+class RechargeProvider implements ProviderContract
 {
     protected Client $client;
 
@@ -18,13 +17,11 @@ class VtpassProvider implements ProviderContract
         $this->config = $config;
 
         $options = [
-            'base_uri' => rtrim($config['base_url'] ?? 'https://vtpass.com/api', '/').'/',
+            'base_uri' => rtrim($config['base_url'] ?? 'https://nigeria.recharge.com.ng/api', '/').'/',
             'timeout' => 30,
             'headers' => [
                 'Content-Type' => 'application/json',
-                'Authorization' => 'Basic '.base64_encode(
-                    ($config['username'] ?? '').':'.($config['password'] ?? '')
-                ),
+                'Authorization' => 'Token '.($config['api_token'] ?? ''),
             ],
         ];
 
@@ -37,56 +34,56 @@ class VtpassProvider implements ProviderContract
 
     public function slug(): string
     {
-        return 'vtpass';
+        return 'recharge';
     }
 
     public function name(): string
     {
-        return 'VTPass';
+        return 'Recharge.com.ng';
     }
 
     public function isSuccessful(array $response): bool
     {
-        return isset($response['code']) && $response['code'] === '000';
+        $codes = $this->config['success_codes'] ?? ['000', '0', '200'];
+        $code = $response['code'] ?? $response['status'] ?? null;
+
+        if ($code === null) {
+            return false;
+        }
+
+        return in_array((string) $code, array_map('strval', $codes), true);
     }
 
     public function purchaseAirtime(array $params): array
     {
-        $payload = [
-            'serviceID' => $params['network'],
+        return $this->send($this->endpoint('airtime'), [
+            'network' => $params['network'],
             'amount' => $params['amount'],
             'phone' => $params['phone_number'],
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'airtime');
+        ], 'airtime');
     }
 
     public function purchaseData(array $params): array
     {
-        $payload = [
-            'serviceID' => $params['network'],
-            'billersCode' => $params['phone_number'],
-            'variation_code' => $params['plan'],
+        return $this->send($this->endpoint('data'), [
+            'network' => $params['network'],
+            'plan' => $params['plan'],
             'amount' => $params['amount'],
             'phone' => $params['phone_number'],
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'data');
+        ], 'data');
     }
 
     public function purchaseElectricity(array $params): array
     {
-        $payload = [
-            'serviceID' => $params['disco'],
-            'billersCode' => $params['meter_number'],
-            'variation_code' => $params['meter_type'] === 'prepaid' ? 'prepaid' : 'postpaid',
+        return $this->send($this->endpoint('electricity'), [
+            'disco' => $params['disco'],
+            'meter_number' => $params['meter_number'],
+            'meter_type' => $params['meter_type'] === 'prepaid' ? 'prepaid' : 'postpaid',
             'amount' => $params['amount'],
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'electricity');
+        ], 'electricity');
     }
 
     public function purchaseCable(array $params): array
@@ -100,84 +97,66 @@ class VtpassProvider implements ProviderContract
             return $verification ?? ['code' => '999', 'response_message' => 'Service temporarily unavailable. Please try again.'];
         }
 
-        $payload = [
-            'serviceID' => $params['cable'],
-            'billersCode' => $params['smartcard_number'],
-            'variation_code' => $params['package'],
+        return $this->send($this->endpoint('cable'), [
+            'cable' => $params['cable'],
+            'smartcard_number' => $params['smartcard_number'],
+            'package' => $params['package'],
             'amount' => $params['amount'],
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'cable');
+        ], 'cable');
     }
 
     public function purchaseExamPins(array $params): array
     {
-        $payload = [
-            'serviceID' => $params['exam_type'],
-            'billersCode' => $params['phone_number'] ?? $params['recipient'] ?? '',
-            'variation_code' => $params['variation_code'] ?? 'default',
+        return $this->send($this->endpoint('exam'), [
+            'exam_type' => $params['exam_type'],
+            'quantity' => $params['quantity'] ?? 1,
             'amount' => $params['amount'],
-            'phone' => $params['phone_number'] ?? $params['recipient'] ?? '',
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'exam pins');
+        ], 'exam pins');
     }
 
     public function purchaseStreaming(array $params): array
     {
-        $payload = [
-            'serviceID' => $params['platform'],
-            'billersCode' => $params['phone_number'] ?? $params['recipient'] ?? '',
-            'variation_code' => $params['plan'],
-            'phone' => $params['phone_number'] ?? $params['recipient'] ?? '',
+        return $this->send($this->endpoint('streaming'), [
+            'platform' => $params['platform'],
+            'plan' => $params['plan'],
+            'amount' => $params['amount'],
             'request_id' => $params['request_id'],
-        ];
-
-        return $this->send('/pay', $payload, 'streaming');
+        ], 'streaming');
     }
 
     public function verifyCustomer(array $params): ?array
     {
-        return $this->get('/merchant-verify', $params, 'customer verification');
+        return $this->send($this->endpoint('verify'), $params, 'customer verification');
     }
 
     public function requery(string $requestId): ?array
     {
-        return $this->get("/requery/{$requestId}", [], 'status check');
+        return $this->get($this->endpoint('requery'), ['request_id' => $requestId], 'status check');
     }
 
-    public function getServiceCategories(): ?array
+    protected function endpoint(string $key): string
     {
-        return Cache::remember('vtpass_service_categories', 3600, function () {
-            return $this->get('/service-categories', [], 'service categories');
-        });
-    }
+        $path = $this->config['endpoints'][$key] ?? ('/'.$key);
 
-    public function getServiceProducts(string $serviceId): ?array
-    {
-        $cacheKey = "vtpass_service_products_{$serviceId}";
-
-        return Cache::remember($cacheKey, 3600, function () use ($serviceId) {
-            return $this->get("/service-categories/{$serviceId}", [], 'service products');
-        });
+        return ltrim($path, '/');
     }
 
     protected function send(string $endpoint, array $payload, string $label): array
     {
         try {
-            $response = $this->client->post($this->path($endpoint), ['json' => $payload]);
+            $response = $this->client->post($endpoint, ['json' => $payload]);
             $body = json_decode($response->getBody()->getContents(), true);
 
-            Log::info("VTPass {$label} purchase", [
+            Log::info("Recharge {$label} purchase", [
                 'payload' => $payload,
                 'response' => $body,
             ]);
 
-            return $body;
+            return is_array($body) ? $body : ['code' => '999', 'response_message' => 'Invalid provider response'];
         } catch (GuzzleException $e) {
-            Log::error("VTPass {$label} purchase failed", [
+            Log::error("Recharge {$label} purchase failed", [
                 'payload' => $payload,
                 'error' => $e->getMessage(),
             ]);
@@ -189,25 +168,20 @@ class VtpassProvider implements ProviderContract
         }
     }
 
-    protected function path(string $endpoint): string
-    {
-        return ltrim($endpoint, '/');
-    }
-
     protected function get(string $endpoint, array $query, string $label): ?array
     {
         try {
-            $response = $this->client->get($this->path($endpoint), ['query' => $query]);
+            $response = $this->client->get($endpoint, ['query' => $query]);
             $body = json_decode($response->getBody()->getContents(), true);
 
-            Log::info("VTPass {$label}", [
+            Log::info("Recharge {$label}", [
                 'response_code' => $body['code'] ?? null,
                 'response' => $body,
             ]);
 
-            return $body;
+            return is_array($body) ? $body : null;
         } catch (GuzzleException $e) {
-            Log::error("VTPass {$label} failed", [
+            Log::error("Recharge {$label} failed", [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);

@@ -2,6 +2,7 @@
 
 use App\Services\Providers\AidaPayProvider;
 use App\Services\Providers\EasyAccessProvider;
+use App\Services\Providers\RechargeProvider;
 use App\Services\Providers\VtpassProvider;
 
 return [
@@ -129,14 +130,24 @@ return [
             ],
         ],
 
-        /*
-        | 'recharge' => [
-        |     'class' => \App\Services\Providers\RechargeProvider::class,
-        |     'label' => 'Recharge.com.ng',
-        |     'enabled' => (bool) env('RECHARGE_ENABLED', false),
-        |     ...
-        | ],
-        */
+        'recharge' => [
+            'class' => RechargeProvider::class,
+            'label' => 'Recharge.com.ng',
+            'enabled' => (bool) env('RECHARGE_ENABLED', false),
+            'base_url' => env('RECHARGE_BASE_URL', 'https://nigeria.recharge.com.ng/api'),
+            'api_token' => env('RECHARGE_API_TOKEN', ''),
+            'success_codes' => ['000', '0', '200'],
+            'endpoints' => [
+                'airtime' => '/airtime',
+                'data' => '/data',
+                'electricity' => '/electricity',
+                'cable' => '/tv',
+                'exam' => '/exam',
+                'streaming' => '/streaming',
+                'verify' => '/verify',
+                'requery' => '/status',
+            ],
+        ],
     ],
 
     /*
@@ -149,12 +160,12 @@ return [
     */
 
     'routing' => [
-        'airtime' => ['vtpass', 'aidapay', 'easyaccess'],
-        'data' => ['vtpass', 'aidapay', 'easyaccess'],
-        'electricity' => ['vtpass', 'aidapay', 'easyaccess'],
-        'cable' => ['vtpass', 'aidapay', 'easyaccess'],
-        'education' => ['vtpass', 'aidapay', 'easyaccess'],
-        'streaming' => ['vtpass', 'aidapay', 'easyaccess'],
+        'airtime' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
+        'data' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
+        'electricity' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
+        'cable' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
+        'education' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
+        'streaming' => ['vtpass', 'aidapay', 'easyaccess', 'recharge'],
     ],
 
     /*

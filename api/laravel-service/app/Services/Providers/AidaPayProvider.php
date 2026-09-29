@@ -31,15 +31,21 @@ class AidaPayProvider implements ProviderContract
     {
         $this->config = $config;
 
-        $this->client = new Client([
-            'base_uri' => $config['base_url'] ?? 'https://www.aidapay.ng/api/v1',
+        $options = [
+            'base_uri' => rtrim($config['base_url'] ?? 'https://www.aidapay.ng/api/v1', '/').'/',
             'timeout' => 30,
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'Authorization' => 'Bearer '.($config['api_token'] ?? ''),
             ],
-        ]);
+        ];
+
+        if (isset($config['handler'])) {
+            $options['handler'] = $config['handler'];
+        }
+
+        $this->client = new Client($options);
     }
 
     public function slug(): string
@@ -147,7 +153,7 @@ class AidaPayProvider implements ProviderContract
         }
 
         try {
-            $response = $this->client->get('/validation/'.rawurlencode($providerCode).'/'.rawurlencode($recipient));
+            $response = $this->client->get($this->path('/validation/'.rawurlencode($providerCode).'/'.rawurlencode($recipient)));
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (($body['success'] ?? false) === true && ($body['data']['verified'] ?? false)) {
@@ -169,7 +175,7 @@ class AidaPayProvider implements ProviderContract
     public function requery(string $requestId): ?array
     {
         try {
-            $response = $this->client->get('/transaction/'.rawurlencode($requestId));
+            $response = $this->client->get($this->path('/transaction/'.rawurlencode($requestId)));
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (($body['success'] ?? false) !== true) {
@@ -210,7 +216,7 @@ class AidaPayProvider implements ProviderContract
         }
 
         try {
-            $response = $this->client->post('/buy', ['json' => $payload]);
+            $response = $this->client->post($this->path('/buy'), ['json' => $payload]);
             $body = json_decode($response->getBody()->getContents(), true);
 
             Log::info('AidaPay purchase', [
@@ -244,5 +250,10 @@ class AidaPayProvider implements ProviderContract
                 'response_message' => 'Service temporarily unavailable. Please try again.',
             ];
         }
+    }
+
+    protected function path(string $endpoint): string
+    {
+        return ltrim($endpoint, '/');
     }
 }
