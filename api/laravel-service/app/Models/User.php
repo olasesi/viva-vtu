@@ -21,16 +21,26 @@ class User extends Authenticatable
         'role',
         'referral_code',
         'referred_by',
+        'kyc_level',
+        'kyc_bvn_hash',
+        'kyc_bvn_last4',
+        'kyc_nin_hash',
+        'kyc_nin_last4',
+        'kyc_verified_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'kyc_bvn_hash',
+        'kyc_nin_hash',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
+        'kyc_level' => 'integer',
+        'kyc_verified_at' => 'datetime',
     ];
 
     public function wallet()

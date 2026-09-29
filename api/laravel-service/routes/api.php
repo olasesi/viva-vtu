@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\KycController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ResellerController;
@@ -49,6 +50,9 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/services/{id}/products', [ServiceController::class, 'listProducts']);
 
     Route::get('/referral', [ReferralController::class, 'status']);
+
+    Route::get('/kyc', [KycController::class, 'status']);
+    Route::post('/kyc', [KycController::class, 'submit']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
