@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Transaction;
+use App\Services\CommissionService;
 use App\Services\ReceiptService;
 
 class TransactionObserver
@@ -21,6 +22,8 @@ class TransactionObserver
         if ($current === 'successful') {
             if ($transaction->type === 'debit') {
                 $service->send($transaction, 'success');
+
+                app(CommissionService::class)->creditReferralBonusFor($transaction);
             } elseif ($transaction->category === 'wallet_fund') {
                 $service->send($transaction, 'funded');
             } elseif ($transaction->category === 'transfer') {

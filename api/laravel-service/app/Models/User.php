@@ -19,6 +19,8 @@ class User extends Authenticatable
         'password',
         'is_active',
         'role',
+        'referral_code',
+        'referred_by',
     ];
 
     protected $hidden = [
@@ -44,6 +46,16 @@ class User extends Authenticatable
     public function paymentLogs()
     {
         return $this->hasMany(PaymentLog::class);
+    }
+
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(User::class, 'referred_by');
     }
 
     public function getFullNameAttribute(): string

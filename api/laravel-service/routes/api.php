@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\SettingController;
@@ -45,6 +46,8 @@ Route::middleware('jwt.verify')->group(function () {
 
     Route::get('/services', [ServiceController::class, 'listServices']);
     Route::get('/services/{id}/products', [ServiceController::class, 'listProducts']);
+
+    Route::get('/referral', [ReferralController::class, 'status']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
