@@ -59,6 +59,18 @@ class TransactionService
             }
         }
 
+        if ($this->shouldPreValidate($category)) {
+            $verification = $this->verifyCustomer($category, $this->preValidationParams($category, $params));
+
+            if (! $verification['success'] && empty($verification['unavailable'])) {
+                return [
+                    'status' => 'validation_failed',
+                    'success' => false,
+                    'message' => $verification['message'],
+                ];
+            }
+        }
+
         $amount = (float) $params['amount'];
         $reference = $this->reference($category);
 
@@ -263,7 +275,33 @@ class TransactionService
             }
         }
 
-        return ['success' => false, 'message' => 'Customer verification service unavailable'];
+        return ['success' => false, 'message' => 'Customer verification service unavailable', 'unavailable' => true];
+    }
+
+    protected function shouldPreValidate(string $category): bool
+    {
+        if (! in_array($category, (array) config('aggregators.pre_validation.categories', []), true)) {
+            return false;
+        }
+
+        $settings = app(SettingService::class)->defaultsMergedWithStored('api');
+
+        return (bool) ($settings['pre_validation_enabled'] ?? false);
+    }
+
+    protected function preValidationParams(string $category, array $params): array
+    {
+        return match ($category) {
+            'electricity' => [
+                'serviceID' => $params['disco'] ?? null,
+                'billersCode' => $params['meter_number'] ?? null,
+            ],
+            'cable' => [
+                'serviceID' => $params['cable'] ?? null,
+                'billersCode' => $params['smartcard_number'] ?? null,
+            ],
+            default => [],
+        };
     }
 
     protected function reserve(int $userId, string $category, string $reference, array $params, float $amount): array

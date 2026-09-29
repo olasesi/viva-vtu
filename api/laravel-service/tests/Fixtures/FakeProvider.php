@@ -8,6 +8,8 @@ class FakeProvider implements ProviderContract
 {
     public static array $calls = [];
 
+    public static array $verifyCalls = [];
+
     protected string $mode;
 
     public function __construct(array $config = [])
@@ -62,7 +64,13 @@ class FakeProvider implements ProviderContract
 
     public function verifyCustomer(array $params): ?array
     {
-        return ['code' => '000', 'content' => ['Customer_Name' => 'JOHN DOE']];
+        static::$verifyCalls[] = $params;
+
+        return match ($this->mode) {
+            'verify_rejected' => ['code' => '903', 'response_message' => 'Invalid meter number'],
+            'verify_unavailable' => ['code' => '999', 'response_message' => 'Service temporarily unavailable'],
+            default => ['code' => '000', 'content' => ['Customer_Name' => 'JOHN DOE']],
+        };
     }
 
     public function requery(string $requestId): ?array

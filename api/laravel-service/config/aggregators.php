@@ -181,6 +181,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Best-effort meter/smartcard pre-validation
+    |--------------------------------------------------------------------------
+    | When enabled (runtime setting `pre_validation_enabled` under the `api`
+    | group), electricity meters and cable smartcards are verified against the
+    | provider before the wallet is debited. Only a definitive provider
+    | rejection blocks the purchase; an unreachable provider never does.
+    |
+    */
+
+    'pre_validation' => [
+        'categories' => ['electricity', 'cable'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Requery / reconciliation
     |--------------------------------------------------------------------------
     */

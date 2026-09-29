@@ -682,6 +682,12 @@ return [
                     'default' => false,
                     'rules' => 'boolean',
                 ],
+                'pre_validation_enabled' => [
+                    'label' => 'Pre-Validate Meters & Smartcards',
+                    'type' => 'boolean',
+                    'default' => false,
+                    'rules' => 'boolean',
+                ],
                 'exchange_rate_margin' => [
                     'label' => 'Exchange Rate Margin (%)',
                     'type' => 'decimal',
