@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\TransactionService;
+use App\Support\Phones\NigerianPhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -131,6 +132,42 @@ class PurchaseController extends Controller
         $result = $this->transactionService->execute('streaming', $userId, $validated);
 
         return $this->mapResult($result);
+    }
+
+    public function verifyPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => 'required|string',
+            'network' => 'nullable|string|in:mtn,glo,9mobile,airtel',
+        ]);
+
+        $check = NigerianPhoneNumber::validateForNetwork(
+            $validated['phone_number'],
+            $validated['network'] ?? ''
+        );
+
+        $data = [
+            'phone_number' => $validated['phone_number'],
+            'normalized' => $check['normalized'],
+            'valid' => $check['valid'],
+            'network' => $check['network'],
+            'declared_network' => $check['declared_network'],
+            'network_match' => $check['network_match'],
+        ];
+
+        if (! $check['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $check['reason'],
+                'data' => $data,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Validation successful',
+            'data' => $data,
+        ]);
     }
 
     public function verify(Request $request): JsonResponse

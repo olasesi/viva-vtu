@@ -6,6 +6,7 @@ use App\Jobs\RequeryPendingTransaction;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Services\Providers\ProviderContract;
+use App\Support\Phones\NigerianPhoneNumber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -43,6 +44,21 @@ class TransactionService
      */
     public function execute(string $category, int $userId, array $params): array
     {
+        if (in_array($category, ['airtime', 'data'], true)) {
+            $check = NigerianPhoneNumber::validateForNetwork(
+                $params['phone_number'] ?? '',
+                $params['network'] ?? ''
+            );
+
+            if (! $check['valid']) {
+                return [
+                    'status' => 'validation_failed',
+                    'success' => false,
+                    'message' => $check['reason'],
+                ];
+            }
+        }
+
         $amount = (float) $params['amount'];
         $reference = $this->reference($category);
 

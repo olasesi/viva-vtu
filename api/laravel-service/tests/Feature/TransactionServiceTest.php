@@ -31,7 +31,7 @@ function routeDataPurchasesThroughFakeProvider(string $mode): void
 function makeDataPurchase(int $userId, array $params = []): array
 {
     return app(TransactionService::class)->execute('data', $userId, array_merge([
-        'phone_number' => '08012345678',
+        'phone_number' => '08031234567',
         'amount' => 1000,
         'network' => 'mtn',
         'plan' => 'gift-1gb',
@@ -91,7 +91,7 @@ it('passes request_id and delivery params to the provider', function () {
     $sent = FakeProvider::$calls[0];
 
     expect($sent['request_id'])->toBe($result['transaction']->reference)
-        ->and($sent['phone_number'])->toBe('08012345678')
+        ->and($sent['phone_number'])->toBe('08031234567')
         ->and($sent['plan'])->toBe('gift-1gb');
 });
 

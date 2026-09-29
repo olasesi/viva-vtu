@@ -286,7 +286,7 @@ it('validates airtime purchase minimum amount', function () {
 
     $response = $this->actingAs($user, 'api')
         ->postJson('/api/purchase/airtime', [
-            'phone_number' => '08012345678',
+            'phone_number' => '08031234567',
             'amount' => 10,
             'network' => 'mtn',
         ]);

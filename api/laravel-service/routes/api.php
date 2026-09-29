@@ -31,6 +31,7 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/exam', [PurchaseController::class, 'buyExam']);
         Route::post('/streaming', [PurchaseController::class, 'buyStreaming']);
         Route::post('/verify', [PurchaseController::class, 'verify']);
+        Route::post('/verify-phone', [PurchaseController::class, 'verifyPhone']);
     });
 
     Route::prefix('service-requests')->group(function () {
