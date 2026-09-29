@@ -47,6 +47,7 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/services/{id}/products', [ServiceController::class, 'listProducts']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
+    Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::get('/transactions/{id}/status', [TransactionController::class, 'status']);
 });

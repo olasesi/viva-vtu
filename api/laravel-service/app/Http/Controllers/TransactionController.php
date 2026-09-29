@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,6 +37,35 @@ class TransactionController extends Controller
             ], 404);
         }
 
+        return $this->statusPayload($transaction);
+    }
+
+    public function statusByReference(Request $request, string $reference): JsonResponse
+    {
+        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
+
+        $transaction = Transaction::where('reference', $reference)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (! $transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found',
+            ], 404);
+        }
+
+        if ($transaction->status === 'pending'
+            && filter_var($request->query('requery', false), FILTER_VALIDATE_BOOLEAN)) {
+            app(TransactionService::class)->requery($transaction);
+            $transaction->refresh();
+        }
+
+        return $this->statusPayload($transaction);
+    }
+
+    protected function statusPayload(Transaction $transaction): JsonResponse
+    {
         return response()->json([
             'success' => true,
             'data' => [
