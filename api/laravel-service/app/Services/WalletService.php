@@ -24,9 +24,9 @@ class WalletService
         return (float) $wallet->balance;
     }
 
-    public function credit(int $userId, float $amount, string $reference, string $description = ''): bool
+    public function credit(int $userId, float $amount, string $reference, string $description = '', string $category = 'wallet_fund'): bool
     {
-        return DB::transaction(function () use ($userId, $amount, $reference, $description) {
+        return DB::transaction(function () use ($userId, $amount, $reference, $description, $category) {
             $wallet = Wallet::where('user_id', $userId)->lockForUpdate()->first();
 
             if (! $wallet) {
@@ -78,7 +78,7 @@ class WalletService
                 'user_id' => $userId,
                 'wallet_id' => $wallet->id,
                 'type' => 'credit',
-                'category' => 'wallet_fund',
+                'category' => $category,
                 'reference' => $reference,
                 'description' => $description,
                 'amount' => $amount,

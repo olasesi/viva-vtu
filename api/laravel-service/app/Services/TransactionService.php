@@ -216,7 +216,8 @@ class TransactionService
             $transaction->user_id,
             (float) $transaction->amount,
             $reversalReference,
-            'Reversal for failed '.$transaction->category.' purchase '.$reference
+            'Reversal for failed '.$transaction->category.' purchase '.$reference,
+            'reversal'
         );
 
         $transaction->update([

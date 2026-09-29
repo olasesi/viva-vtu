@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Transaction;
+use App\Observers\TransactionObserver;
 use App\Services\Providers\ProviderContract;
 use App\Services\Providers\VtpassProvider;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Transaction::observe(TransactionObserver::class);
+
         Model::unguard(false);
         Model::preventLazyLoading(! $this->app->isProduction());
     }
