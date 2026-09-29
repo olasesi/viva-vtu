@@ -143,13 +143,13 @@ class WalletService
         });
     }
 
-    public function transfer(int $fromUserId, int $toUserId, float $amount): bool
+    public function transfer(int $fromUserId, int $toUserId, float $amount, string $reference): array
     {
-        return DB::transaction(function () use ($fromUserId, $toUserId, $amount) {
+        return DB::transaction(function () use ($fromUserId, $toUserId, $amount, $reference) {
             if ($fromUserId === $toUserId) {
                 Log::warning('Self-transfer attempt', ['user_id' => $fromUserId]);
 
-                return false;
+                return ['status' => 'self_transfer'];
             }
 
             $fromWallet = Wallet::where('user_id', $fromUserId)->lockForUpdate()->first();
@@ -158,7 +158,7 @@ class WalletService
             if (! $fromWallet) {
                 Log::warning('Source wallet not found', ['user_id' => $fromUserId]);
 
-                return false;
+                return ['status' => 'no_source_wallet'];
             }
 
             if (! $toWallet) {
@@ -176,10 +176,8 @@ class WalletService
                     'available' => $fromWallet->balance,
                 ]);
 
-                return false;
+                return ['status' => 'insufficient'];
             }
-
-            $transferRef = 'TRF-'.strtoupper(uniqid());
 
             $fromWallet->update([
                 'balance' => (float) $fromWallet->balance - $amount,
@@ -195,8 +193,8 @@ class WalletService
                 'user_id' => $fromUserId,
                 'wallet_id' => $fromWallet->id,
                 'type' => 'debit',
-                'category' => 'wallet_fund',
-                'reference' => $transferRef,
+                'category' => 'transfer',
+                'reference' => $reference,
                 'description' => "Transfer to user #{$toUserId}",
                 'amount' => $amount,
                 'status' => 'successful',
@@ -207,8 +205,8 @@ class WalletService
                 'user_id' => $toUserId,
                 'wallet_id' => $toWallet->id,
                 'type' => 'credit',
-                'category' => 'wallet_fund',
-                'reference' => $transferRef,
+                'category' => 'transfer',
+                'reference' => $reference.'-C',
                 'description' => "Transfer from user #{$fromUserId}",
                 'amount' => $amount,
                 'status' => 'successful',
@@ -219,10 +217,15 @@ class WalletService
                 'from_user' => $fromUserId,
                 'to_user' => $toUserId,
                 'amount' => $amount,
-                'reference' => $transferRef,
+                'reference' => $reference,
             ]);
 
-            return true;
+            return [
+                'status' => 'success',
+                'reference' => $reference,
+                'from_balance' => (float) $fromWallet->fresh()->balance,
+                'to_balance' => (float) $toWallet->fresh()->balance,
+            ];
         });
     }
 

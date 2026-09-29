@@ -45,6 +45,66 @@ class WalletController extends Controller
         ]);
     }
 
+    public function transfer(Request $request): JsonResponse
+    {
+        $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;
+
+        if (! $userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'recipient' => 'required|string',
+            'amount' => 'required|numeric|min:50',
+        ]);
+
+        $amount = (float) $validated['amount'];
+        $recipient = trim($validated['recipient']);
+
+        $toUser = User::where('email', $recipient)
+            ->orWhere('phone', $recipient)
+            ->first();
+
+        if (! $toUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Recipient not found. Provide a registered email or phone number.',
+            ], 422);
+        }
+
+        $reference = 'TRF-'.strtoupper(Str::random(12));
+
+        $result = $this->walletService->transfer($userId, $toUser->id, $amount, $reference);
+
+        return match ($result['status']) {
+            'success' => response()->json([
+                'success' => true,
+                'message' => 'Transfer successful',
+                'data' => [
+                    'reference' => $result['reference'],
+                    'amount' => $amount,
+                    'balance' => $result['from_balance'],
+                    'currency' => 'NGN',
+                ],
+            ]),
+            'self_transfer' => response()->json([
+                'success' => false,
+                'message' => 'You cannot transfer money to yourself.',
+                'data' => null,
+            ], 400),
+            'insufficient' => response()->json([
+                'success' => false,
+                'message' => 'Insufficient wallet balance.',
+                'data' => null,
+            ], 400),
+            default => response()->json([
+                'success' => false,
+                'message' => 'Transfer failed. Please try again.',
+                'data' => null,
+            ], 400),
+        };
+    }
+
     public function fund(Request $request): JsonResponse
     {
         $userId = $request->user()['id'] ?? $request->user('api')['id'] ?? null;

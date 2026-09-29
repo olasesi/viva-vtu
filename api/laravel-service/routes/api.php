@@ -21,6 +21,7 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/fund', [WalletController::class, 'fund']);
         Route::get('/verify/{reference}', [WalletController::class, 'verify']);
         Route::get('/history', [WalletController::class, 'history']);
+        Route::post('/transfer', [WalletController::class, 'transfer']);
     });
 
     Route::prefix('purchase')->group(function () {
