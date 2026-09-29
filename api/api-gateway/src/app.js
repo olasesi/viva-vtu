@@ -20,8 +20,6 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: config.cors.origin, credentials: true }));
 app.use(compression());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(morgan("combined", { stream: { write: (msg) => logger.info(msg.trim()) } }));
 app.use(requestLogger);
 app.use(rateLimiter);

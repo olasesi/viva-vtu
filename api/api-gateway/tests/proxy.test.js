@@ -143,4 +143,20 @@ describe("API Gateway proxy routing", () => {
     expect(res.status).toBe(502);
     expect(res.body.status).toBe("error");
   });
+
+  it("forwards POST bodies intact even when a body parser runs first", async () => {
+    const bodyParserRouter = createProxyRouter({
+      auth: serviceUrl(authServer),
+      billing: serviceUrl(billingServer),
+      analytics: serviceUrl(analyticsServer),
+    });
+    const bodyParserApp = express();
+    bodyParserApp.use(express.json());
+    bodyParserApp.use("/api", bodyParserRouter);
+    const res = await request(bodyParserApp)
+      .post("/api/purchase/verify-phone")
+      .send({ phone_number: "08031234567", network: "mtn" });
+    expect(res.status).toBe(200);
+    expect(billingCalls[billingCalls.length - 1].body).toContain("08031234567");
+  });
 });

@@ -4,6 +4,8 @@ const config = require("../config");
 const { optionalAuth } = require("../middleware/authenticate");
 const logger = require("../config/logger");
 
+const isEmptyBody = (body) => body === undefined || body === null || Object.keys(body).length === 0;
+
 const createServiceProxy = (target, pathRewrite) => {
   return createProxyMiddleware({
     target,
@@ -19,6 +21,13 @@ const createServiceProxy = (target, pathRewrite) => {
           proxyReq.setHeader("X-User-Email", req.user.email || "");
           proxyReq.setHeader("X-User-Role", req.user.role || "");
           proxyReq.setHeader("X-Forwarded-User", JSON.stringify(req.user));
+        }
+        if (!isEmptyBody(req.body)) {
+          const bodyText = JSON.stringify(req.body);
+          proxyReq.setHeader("Content-Type", "application/json");
+          proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyText));
+          proxyReq.write(bodyText);
+          proxyReq.end();
         }
       },
       proxyRes: (proxyRes, req) => {
