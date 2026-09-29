@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\ResellerController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\SettingController;
@@ -69,4 +70,12 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::get('/transactions', [AdminController::class, 'transactions']);
     Route::get('/stats', [AdminController::class, 'stats']);
     Route::get('/aggregator-health', [AdminController::class, 'aggregatorHealth']);
+    Route::post('/reseller-keys', [ResellerController::class, 'issueKey']);
+    Route::delete('/reseller-keys/{id}', [ResellerController::class, 'revokeKey']);
+});
+
+Route::middleware('reseller')->prefix('v1')->group(function () {
+    Route::get('/reseller/transactions', [ResellerController::class, 'status']);
+    Route::post('/reseller/purchase/{category}', [ResellerController::class, 'purchase'])
+        ->middleware('throttle:120,1');
 });
