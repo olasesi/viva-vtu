@@ -17,7 +17,7 @@ Goal: no single point of failure, silent failures die, refunds happen in seconds
 - [x] `ProviderRouter` — health-aware, config-driven failover per service category
 - [x] `TransactionService` — idempotent state machine + automatic reversal
 - [x] `RequeryPendingTransaction` job + scheduled reconciliation command
-- [ ] Wire second aggregator adapter (Recharge.com.ng, then others) + test circuit breaker
+- [x] Wire second aggregator adapter (Recharge.com.ng) — circuit-breaker stress test pending
 - [ ] Status-polling endpoint consumed by frontend
 - [ ] Webhook/SMS receipt emission on state changes (needs Termii)
 
@@ -27,6 +27,7 @@ Goal: boringly reliable data buying for all Nigerians.
 
 - [ ] SME/Corporate gifting data pricing engine (wholesale cache + margin rules)
 - [x] Network prefix pre-validation (backend) + phone contact picker (frontend pending)
+- [x] Meter/smartcard pre-validation before debit (runtime-toggleable, best-effort)
 - [ ] Data plans catalogue UI (frontend) with transparent pre-priced checkout
 - [ ] Instant on-success SMS/push + printable receipt
 
@@ -43,7 +44,7 @@ Goal: fund a wallet and top utilities in seconds, any channel.
 - [ ] Referral + commission engine
 - [ ] Reseller hierarchy + margin engine
 - [ ] KYC tiers (BVN/NIN)
-- [ ] Internal wallet transfer
+- [x] Internal wallet transfer
 
 ## Phase 5 — Reseller API & Automation → FEATURES C11, F20-25
 
