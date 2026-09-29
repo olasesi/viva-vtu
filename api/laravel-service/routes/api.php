@@ -65,4 +65,5 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::get('/users', [AdminController::class, 'users']);
     Route::get('/transactions', [AdminController::class, 'transactions']);
     Route::get('/stats', [AdminController::class, 'stats']);
+    Route::get('/aggregator-health', [AdminController::class, 'aggregatorHealth']);
 });

@@ -124,6 +124,8 @@ class ProviderRouter
                 'slug' => $slug,
                 'consecutive_failures' => $count,
             ]);
+
+            app(HealthAlertService::class)->providerTripped($slug, $count);
         }
     }
 

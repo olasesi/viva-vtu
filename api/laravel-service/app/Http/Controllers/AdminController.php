@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\ProviderRouter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -104,6 +105,22 @@ class AdminController extends Controller
                     ->where('status', 'successful')
                     ->whereDate('created_at', today())
                     ->sum('amount'),
+            ],
+        ]);
+    }
+
+    public function aggregatorHealth(): JsonResponse
+    {
+        $report = app(ProviderRouter::class)->healthyProvidersReport();
+
+        $unhealthy = collect($report)->filter(fn (array $status) => ! $status['healthy'])->keys()->values()->all();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'providers' => $report,
+                'unhealthy' => $unhealthy,
+                'checkedAt' => now()->toISO8601String(),
             ],
         ]);
     }

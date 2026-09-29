@@ -177,6 +177,8 @@ return [
     'health' => [
         'failure_threshold' => (int) env('AGGREGATOR_FAILURE_THRESHOLD', 3),
         'cooldown_minutes' => (int) env('AGGREGATOR_COOLDOWN_MINUTES', 5),
+        'alert_enabled' => (bool) env('AGGREGATOR_ALERT_ENABLED', false),
+        'alert_url' => env('AGGREGATOR_ALERT_WEBHOOK_URL'),
     ],
 
     /*
