@@ -17,7 +17,8 @@ Goal: no single point of failure, silent failures die, refunds happen in seconds
 - [x] `ProviderRouter` — health-aware, config-driven failover per service category
 - [x] `TransactionService` — idempotent state machine + automatic reversal
 - [x] `RequeryPendingTransaction` job + scheduled reconciliation command
-- [x] Wire second aggregator adapter (Recharge.com.ng) — circuit-breaker stress test pending
+- [x] Wire second aggregator adapter (Recharge.com.ng)
+- [x] Circuit-breaker stress test (trip, cooldown recovery, refund integrity)
 - [x] Status-polling endpoint consumed by frontend
 - [ ] Webhook/SMS receipt emission on state changes (needs Termii)
 
