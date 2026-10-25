@@ -23,6 +23,9 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  Gift,
+  Network,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -69,6 +72,21 @@ const walletItems = [
 ];
 
 const bottomItems = [
+  {
+    label: "KYC Verification",
+    href: "/dashboard/kyc",
+    icon: ShieldCheck,
+  },
+  {
+    label: "Referrals",
+    href: "/dashboard/referral",
+    icon: Gift,
+  },
+  {
+    label: "Reseller",
+    href: "/dashboard/reseller",
+    icon: Network,
+  },
   {
     label: "Profile",
     href: "/dashboard/profile",
@@ -234,6 +252,28 @@ export function Sidebar() {
               >
                 <Activity className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Transactions</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/health"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/dashboard/admin/health"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <Activity className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Aggregator Health</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/resellers"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/dashboard/admin/resellers"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <Network className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Resellers</span>}
               </Link>
             </div>
           </>

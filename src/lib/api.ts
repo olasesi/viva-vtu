@@ -137,6 +137,108 @@ export async function getTransaction(
   return data;
 }
 
+export async function getKycStatus(): Promise<
+  ApiResponse<{
+    level: number;
+    verified: boolean;
+    verifiedAt?: string;
+    bvn?: string | null;
+    nin?: string | null;
+  }>
+> {
+  const { data } = await api.get("/api/kyc");
+  return data;
+}
+
+export async function submitKyc(payload: {
+  bvn?: string;
+  nin?: string;
+}): Promise<
+  ApiResponse<{
+    level: number;
+    verified: boolean;
+    verifiedAt?: string;
+    bvn?: string | null;
+    nin?: string | null;
+  }>
+> {
+  const { data } = await api.post("/api/kyc", payload);
+  return data;
+}
+
+export async function getReferralStatus(): Promise<
+  ApiResponse<{
+    code: string;
+    link: string;
+    totalEarned: number;
+    referralsCount: number;
+  }>
+> {
+  const { data } = await api.get("/api/referral");
+  return data;
+}
+
+export async function getResellerHierarchy(): Promise<
+  ApiResponse<{
+    parent: { id: number; name: string } | null;
+    downline: Array<{
+      id: number;
+      name: string;
+      email: string;
+      isReseller: boolean;
+      marginRate: number;
+      joinedAt?: string;
+    }>;
+    downlineCount: number;
+  }>
+> {
+  const { data } = await api.get("/api/reseller/hierarchy");
+  return data;
+}
+
+export async function getResellerWebhooks(): Promise<ApiResponse<any[]>> {
+  const { data } = await api.get("/api/reseller/webhooks");
+  return data;
+}
+
+export async function createResellerWebhook(payload: {
+  url: string;
+  events?: string[];
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/reseller/webhooks", payload);
+  return data;
+}
+
+export async function deleteResellerWebhook(
+  id: number,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.delete(`/api/reseller/webhooks/${id}`);
+  return data;
+}
+
+export async function getAggregatorHealth(): Promise<
+  ApiResponse<{
+    providers: Record<
+      string,
+      { enabled: boolean; healthy: boolean; consecutive_failures: number }
+    >;
+    unhealthy: string[];
+    checkedAt: string;
+  }>
+> {
+  const { data } = await api.get("/api/admin/aggregator-health");
+  return data;
+}
+
+export async function assignReseller(payload: {
+  reseller_id: number;
+  parent_id: number;
+  margin_rate?: number;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/admin/resellers/assign", payload);
+  return data;
+}
+
 export async function getServices(): Promise<
   ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>
 > {
