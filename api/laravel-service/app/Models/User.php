@@ -21,6 +21,9 @@ class User extends Authenticatable
         'role',
         'referral_code',
         'referred_by',
+        'reseller_parent_id',
+        'reseller_margin_rate',
+        'is_reseller',
         'kyc_level',
         'kyc_bvn_hash',
         'kyc_bvn_last4',
@@ -39,6 +42,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
+        'is_reseller' => 'boolean',
+        'reseller_margin_rate' => 'float',
         'kyc_level' => 'integer',
         'kyc_verified_at' => 'datetime',
     ];
@@ -66,6 +71,16 @@ class User extends Authenticatable
     public function referrals()
     {
         return $this->hasMany(User::class, 'referred_by');
+    }
+
+    public function resellerParent()
+    {
+        return $this->belongsTo(User::class, 'reseller_parent_id');
+    }
+
+    public function downline()
+    {
+        return $this->hasMany(User::class, 'reseller_parent_id');
     }
 
     public function getFullNameAttribute(): string

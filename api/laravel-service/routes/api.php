@@ -5,6 +5,7 @@ use App\Http\Controllers\KycController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ResellerController;
+use App\Http\Controllers\ResellerHierarchyController;
 use App\Http\Controllers\ResellerWebhookController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
@@ -58,6 +59,7 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/reseller/webhooks', [ResellerWebhookController::class, 'index']);
     Route::post('/reseller/webhooks', [ResellerWebhookController::class, 'store']);
     Route::delete('/reseller/webhooks/{id}', [ResellerWebhookController::class, 'destroy']);
+    Route::get('/reseller/hierarchy', [ResellerHierarchyController::class, 'tree']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
@@ -81,6 +83,7 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::get('/aggregator-health', [AdminController::class, 'aggregatorHealth']);
     Route::post('/reseller-keys', [ResellerController::class, 'issueKey']);
     Route::delete('/reseller-keys/{id}', [ResellerController::class, 'revokeKey']);
+    Route::post('/resellers/assign', [ResellerHierarchyController::class, 'assign']);
 });
 
 Route::middleware('reseller')->prefix('v1')->group(function () {
