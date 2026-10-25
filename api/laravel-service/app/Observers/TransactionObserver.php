@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Transaction;
 use App\Services\CommissionService;
 use App\Services\ReceiptService;
+use App\Services\ResellerWebhookService;
 
 class TransactionObserver
 {
@@ -24,6 +25,7 @@ class TransactionObserver
                 $service->send($transaction, 'success');
 
                 app(CommissionService::class)->creditReferralBonusFor($transaction);
+                app(ResellerWebhookService::class)->dispatchForTransaction($transaction, 'order.completed');
             } elseif ($transaction->category === 'wallet_fund') {
                 $service->send($transaction, 'funded');
             } elseif ($transaction->category === 'transfer') {
@@ -39,6 +41,8 @@ class TransactionObserver
             && $transaction->reversed_at !== null
         ) {
             $service->send($transaction, 'refund');
+
+            app(ResellerWebhookService::class)->dispatchForTransaction($transaction, 'order.failed');
         }
     }
 
@@ -52,6 +56,8 @@ class TransactionObserver
 
         if ($transaction->type === 'debit' && $transaction->category === 'transfer') {
             $service->send($transaction, 'success');
+
+            app(ResellerWebhookService::class)->dispatchForTransaction($transaction, 'order.completed');
         } elseif ($transaction->type === 'credit') {
             if ($transaction->category === 'transfer' || $transaction->category === 'referral') {
                 $service->send($transaction, 'received');

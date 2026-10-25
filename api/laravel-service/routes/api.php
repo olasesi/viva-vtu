@@ -5,6 +5,7 @@ use App\Http\Controllers\KycController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ResellerController;
+use App\Http\Controllers\ResellerWebhookController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\SettingController;
@@ -53,6 +54,10 @@ Route::middleware('jwt.verify')->group(function () {
 
     Route::get('/kyc', [KycController::class, 'status']);
     Route::post('/kyc', [KycController::class, 'submit']);
+
+    Route::get('/reseller/webhooks', [ResellerWebhookController::class, 'index']);
+    Route::post('/reseller/webhooks', [ResellerWebhookController::class, 'store']);
+    Route::delete('/reseller/webhooks/{id}', [ResellerWebhookController::class, 'destroy']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
