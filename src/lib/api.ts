@@ -288,6 +288,28 @@ export async function updateAdminTicket(
   return data;
 }
 
+export async function getNotifications(): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/notifications");
+  return data;
+}
+
+export async function getUnreadNotificationCount(): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/notifications/unread-count");
+  return data;
+}
+
+export async function markNotificationAsRead(
+  id: string,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.post(`/api/notifications/${id}/read`);
+  return data;
+}
+
+export async function markAllNotificationsAsRead(): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/notifications/read-all");
+  return data;
+}
+
 export async function getServices(): Promise<
   ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>
 > {

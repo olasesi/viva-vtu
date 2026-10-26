@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminTicketController;
 use App\Http\Controllers\KycController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ResellerController;
@@ -67,6 +68,11 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/tickets', [TicketController::class, 'store']);
     Route::get('/tickets/{id}', [TicketController::class, 'show']);
     Route::post('/tickets/{id}/reply', [TicketController::class, 'reply']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
