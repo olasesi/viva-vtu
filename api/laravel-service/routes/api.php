@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminTicketController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferralController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\ResellerWebhookController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
@@ -61,6 +63,11 @@ Route::middleware('jwt.verify')->group(function () {
     Route::delete('/reseller/webhooks/{id}', [ResellerWebhookController::class, 'destroy']);
     Route::get('/reseller/hierarchy', [ResellerHierarchyController::class, 'tree']);
 
+    Route::get('/tickets', [TicketController::class, 'index']);
+    Route::post('/tickets', [TicketController::class, 'store']);
+    Route::get('/tickets/{id}', [TicketController::class, 'show']);
+    Route::post('/tickets/{id}/reply', [TicketController::class, 'reply']);
+
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
@@ -84,6 +91,10 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::post('/reseller-keys', [ResellerController::class, 'issueKey']);
     Route::delete('/reseller-keys/{id}', [ResellerController::class, 'revokeKey']);
     Route::post('/resellers/assign', [ResellerHierarchyController::class, 'assign']);
+    Route::get('/tickets', [AdminTicketController::class, 'index']);
+    Route::get('/tickets/{id}', [AdminTicketController::class, 'show']);
+    Route::post('/tickets/{id}/reply', [AdminTicketController::class, 'reply']);
+    Route::patch('/tickets/{id}', [AdminTicketController::class, 'update']);
 });
 
 Route::middleware('reseller')->prefix('v1')->group(function () {
