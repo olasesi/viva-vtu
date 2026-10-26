@@ -56,6 +56,61 @@ export async function login(
   payload: LoginPayload,
 ): Promise<ApiResponse<{ user: User; token: string }>> {
   const { data } = await api.post("/api/auth/login", payload);
+
+  if (data?.data?.accessToken) {
+    data.data.token = data.data.accessToken;
+  }
+
+  return data;
+}
+
+export async function verifyTwoFactorLogin(payload: {
+  challengeToken: string;
+  code: string;
+}): Promise<ApiResponse<{ user: User; token: string; accessToken?: string }>> {
+  const { data } = await api.post("/api/auth/2fa/verify", payload);
+
+  if (data?.data?.accessToken) {
+    data.data.token = data.data.accessToken;
+  }
+
+  return data;
+}
+
+export async function getTwoFactorStatus(): Promise<
+  ApiResponse<{ enabled: boolean; confirmedAt: string | null }>
+> {
+  const { data } = await api.get("/api/auth/2fa/status");
+  return data;
+}
+
+export async function setupTwoFactor(): Promise<
+  ApiResponse<{ secret: string; otpauthUrl: string }>
+> {
+  const { data } = await api.post("/api/auth/2fa/setup");
+  return data;
+}
+
+export async function confirmTwoFactor(code: string): Promise<
+  ApiResponse<{ recoveryCodes: string[] }>
+> {
+  const { data } = await api.post("/api/auth/2fa/confirm", { code });
+  return data;
+}
+
+export async function disableTwoFactor(payload: {
+  password: string;
+  code: string;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/auth/2fa/disable", payload);
+  return data;
+}
+
+export async function regenerateRecoveryCodes(payload: {
+  password: string;
+  code: string;
+}): Promise<ApiResponse<{ recoveryCodes: string[] }>> {
+  const { data } = await api.post("/api/auth/2fa/recovery-codes", payload);
   return data;
 }
 

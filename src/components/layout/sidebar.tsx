@@ -100,6 +100,11 @@ const bottomItems = [
     icon: AlertCircle,
   },
   {
+    label: "Security",
+    href: "/dashboard/security",
+    icon: ShieldCheck,
+  },
+  {
     label: "Profile",
     href: "/dashboard/profile",
     icon: User,

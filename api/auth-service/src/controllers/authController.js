@@ -27,6 +27,8 @@ const sanitizeUser = (user) => {
     emailVerificationExpiry,
     passwordResetToken,
     passwordResetExpiry,
+    twoFactorSecret,
+    twoFactorRecoveryCodes,
     ...safe
   } = user;
   /* eslint-enable no-unused-vars */
@@ -109,6 +111,19 @@ const login = async (req, res, next) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new AppError("Invalid email or password", 401);
+    }
+
+    if (user.twoFactorEnabled) {
+      const twoFactorController = require("./twoFactorController");
+
+      return res.status(200).json({
+        status: "success",
+        message: "Two-factor authentication required",
+        data: {
+          twoFactorRequired: true,
+          challengeToken: twoFactorController.issueChallengeToken(user),
+        },
+      });
     }
 
     const accessToken = generateAccessToken(user);

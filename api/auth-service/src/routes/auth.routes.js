@@ -3,6 +3,7 @@ const { body } = require("express-validator");
 const validate = require("../middleware/validate");
 const authenticate = require("../middleware/authenticate");
 const authController = require("../controllers/authController");
+const twoFactorController = require("../controllers/twoFactorController");
 
 const router = express.Router();
 
@@ -126,6 +127,60 @@ router.post(
       ),
   ]),
   authController.resetPassword,
+);
+
+router.post(
+  "/2fa/verify",
+  validate([
+    body("challengeToken")
+      .notEmpty()
+      .withMessage("Challenge token is required")
+      .isString()
+      .withMessage("Challenge token must be a string"),
+    body("code")
+      .notEmpty()
+      .withMessage("Authentication code is required")
+      .isString()
+      .withMessage("Authentication code must be a string"),
+  ]),
+  twoFactorController.verifyLogin,
+);
+
+router.get("/2fa/status", authenticate, twoFactorController.status);
+
+router.post("/2fa/setup", authenticate, twoFactorController.setup);
+
+router.post(
+  "/2fa/confirm",
+  authenticate,
+  validate([
+    body("code")
+      .notEmpty()
+      .withMessage("Authentication code is required")
+      .isString()
+      .withMessage("Authentication code must be a string"),
+  ]),
+  twoFactorController.confirm,
+);
+
+router.post(
+  "/2fa/disable",
+  authenticate,
+  validate([
+    body("password").notEmpty().withMessage("Password is required"),
+    body("code").notEmpty().withMessage("Authentication code is required"),
+  ]),
+  twoFactorController.disable,
+);
+
+router.post(
+  "/2fa/recovery-codes",
+  authenticate,
+  validate([
+    body("password").notEmpty().withMessage("Password is required"),
+    body("code").notEmpty().withMessage("Authentication code is required"),
+  ]),
+  twoFactorController.regenerateRecoveryCodes,
 );
 
 router.get("/profile", authenticate, authController.getProfile);

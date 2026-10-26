@@ -14,6 +14,25 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => api.login(payload),
     onSuccess: (response) => {
+      const data: any = response.data;
+
+      if (data?.twoFactorRequired) {
+        sessionStorage.setItem("viva-2fa-challenge", data.challengeToken);
+        router.push("/login?step=2fa");
+        return;
+      }
+
+      storeLogin(data.user, data.token);
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      router.push("/dashboard");
+    },
+  });
+
+  const verifyTwoFactorMutation = useMutation({
+    mutationFn: (payload: { challengeToken: string; code: string }) =>
+      api.verifyTwoFactorLogin(payload),
+    onSuccess: (response) => {
+      sessionStorage.removeItem("viva-2fa-challenge");
       storeLogin(response.data.user, response.data.token);
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       router.push("/dashboard");
@@ -53,6 +72,9 @@ export function useAuth() {
     register: registerMutation.mutate,
     registerError: registerMutation.error,
     isRegisterLoading: registerMutation.isPending,
+    verifyTwoFactor: verifyTwoFactorMutation.mutate,
+    verifyTwoFactorError: verifyTwoFactorMutation.error,
+    isVerifyTwoFactorLoading: verifyTwoFactorMutation.isPending,
     logout,
     profile: profileQuery.data?.data,
   };
