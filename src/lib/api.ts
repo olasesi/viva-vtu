@@ -310,6 +310,36 @@ export async function markAllNotificationsAsRead(): Promise<ApiResponse<any>> {
   return data;
 }
 
+export async function getDisputes(): Promise<ApiResponse<any>> {
+  const { data } = await api.get('/api/disputes');
+  return data;
+}
+
+export async function createDispute(payload: any): Promise<ApiResponse<any>> {
+  const { data } = await api.post('/api/disputes', payload);
+  return data;
+}
+
+export async function getDispute(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.get(`/api/disputes/${id}`);
+  return data;
+}
+
+export async function getAdminDisputes(): Promise<ApiResponse<any>> {
+  const { data } = await api.get('/api/admin/disputes');
+  return data;
+}
+
+export async function getAdminDispute(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.get(`/api/admin/disputes/${id}`);
+  return data;
+}
+
+export async function updateAdminDispute(id: number, payload: any): Promise<ApiResponse<any>> {
+  const { data } = await api.patch(`/api/admin/disputes/${id}`, payload);
+  return data;
+}
+
 export async function getServices(): Promise<
   ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>
 > {

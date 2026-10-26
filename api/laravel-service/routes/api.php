@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminTicketController;
+use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PurchaseController;
@@ -74,6 +76,10 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
+    Route::get('/disputes', [DisputeController::class, 'index']);
+    Route::post('/disputes', [DisputeController::class, 'store']);
+    Route::get('/disputes/{id}', [DisputeController::class, 'show']);
+
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
@@ -101,6 +107,9 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::get('/tickets/{id}', [AdminTicketController::class, 'show']);
     Route::post('/tickets/{id}/reply', [AdminTicketController::class, 'reply']);
     Route::patch('/tickets/{id}', [AdminTicketController::class, 'update']);
+    Route::get('/disputes', [AdminDisputeController::class, 'index']);
+    Route::get('/disputes/{id}', [AdminDisputeController::class, 'show']);
+    Route::patch('/disputes/{id}', [AdminDisputeController::class, 'update']);
 });
 
 Route::middleware('reseller')->prefix('v1')->group(function () {

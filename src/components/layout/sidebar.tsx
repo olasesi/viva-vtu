@@ -27,6 +27,7 @@ import {
   Gift,
   Network,
   MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -92,6 +93,11 @@ const bottomItems = [
     label: "Support",
     href: "/dashboard/support",
     icon: MessageSquare,
+  },
+  {
+    label: "Disputes",
+    href: "/dashboard/disputes",
+    icon: AlertCircle,
   },
   {
     label: "Profile",
@@ -291,6 +297,17 @@ export function Sidebar() {
               >
                 <MessageSquare className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Support Tickets</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/disputes"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/dashboard/admin/disputes")
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Disputes</span>}
               </Link>
             </div>
           </>
