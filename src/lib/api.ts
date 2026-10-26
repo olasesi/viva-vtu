@@ -239,6 +239,55 @@ export async function assignReseller(payload: {
   return data;
 }
 
+export async function getTickets(): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/tickets");
+  return data;
+}
+
+export async function createTicket(payload: any): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/tickets", payload);
+  return data;
+}
+
+export async function getTicket(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.get(`/api/tickets/${id}`);
+  return data;
+}
+
+export async function replyTicket(
+  id: number,
+  payload: { message: string },
+): Promise<ApiResponse<any>> {
+  const { data } = await api.post(`/api/tickets/${id}/reply`, payload);
+  return data;
+}
+
+export async function getAdminTickets(params?: any): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/admin/tickets", { params });
+  return data;
+}
+
+export async function getAdminTicket(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.get(`/api/admin/tickets/${id}`);
+  return data;
+}
+
+export async function replyAdminTicket(
+  id: number,
+  payload: any,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.post(`/api/admin/tickets/${id}/reply`, payload);
+  return data;
+}
+
+export async function updateAdminTicket(
+  id: number,
+  payload: any,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.patch(`/api/admin/tickets/${id}`, payload);
+  return data;
+}
+
 export async function getServices(): Promise<
   ApiResponse<{ networks: any[]; electricity: any[]; cable: any[] }>
 > {

@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Gift,
   Network,
+  MessageSquare,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -86,6 +87,11 @@ const bottomItems = [
     label: "Reseller",
     href: "/dashboard/reseller",
     icon: Network,
+  },
+  {
+    label: "Support",
+    href: "/dashboard/support",
+    icon: MessageSquare,
   },
   {
     label: "Profile",
@@ -274,6 +280,17 @@ export function Sidebar() {
               >
                 <Network className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Resellers</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/tickets"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/dashboard/admin/tickets")
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Support Tickets</span>}
               </Link>
             </div>
           </>
