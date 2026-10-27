@@ -661,4 +661,80 @@ export async function deleteAdminFaqArticle(
   return data;
 }
 
+export interface RecurringPurchaseRecord {
+  id: number;
+  name: string;
+  category:
+    | "airtime"
+    | "data"
+    | "electricity"
+    | "cable"
+    | "education"
+    | "streaming";
+  payload: Record<string, string | number | null>;
+  amount: string;
+  frequency: "daily" | "weekly" | "monthly";
+  interval: number;
+  day_of_month: number | null;
+  status: "active" | "paused" | "cancelled";
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  run_count: number;
+  failure_count: number;
+  created_at: string;
+}
+
+export async function getRecurringPurchases(params?: {
+  status?: string;
+}): Promise<ApiResponse<RecurringPurchaseRecord[]>> {
+  const { data } = await api.get("/api/recurring-purchases", { params });
+  return data;
+}
+
+export async function createRecurringPurchase(
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.post("/api/recurring-purchases", payload);
+  return data;
+}
+
+export async function updateRecurringPurchase(
+  id: number,
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.patch(`/api/recurring-purchases/${id}`, payload);
+  return data;
+}
+
+export async function deleteRecurringPurchase(
+  id: number,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.delete(`/api/recurring-purchases/${id}`);
+  return data;
+}
+
+export async function pauseRecurringPurchase(
+  id: number,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.post(`/api/recurring-purchases/${id}/pause`);
+  return data;
+}
+
+export async function resumeRecurringPurchase(
+  id: number,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.post(`/api/recurring-purchases/${id}/resume`);
+  return data;
+}
+
+export async function runRecurringPurchase(
+  id: number,
+  payload?: Record<string, unknown>,
+): Promise<ApiResponse<RecurringPurchaseRecord>> {
+  const { data } = await api.post(`/api/recurring-purchases/${id}/run`, payload);
+  return data;
+}
+
 export default api;

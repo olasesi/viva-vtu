@@ -11,6 +11,7 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\RecurringPurchaseController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ResellerController;
 use App\Http\Controllers\ResellerHierarchyController;
@@ -104,6 +105,15 @@ Route::middleware('jwt.verify')->group(function () {
     Route::patch('/beneficiaries/{id}', [BeneficiaryController::class, 'update']);
     Route::delete('/beneficiaries/{id}', [BeneficiaryController::class, 'destroy']);
     Route::post('/beneficiaries/{id}/favorite', [BeneficiaryController::class, 'toggleFavorite']);
+
+    Route::get('/recurring-purchases', [RecurringPurchaseController::class, 'index']);
+    Route::post('/recurring-purchases', [RecurringPurchaseController::class, 'store']);
+    Route::get('/recurring-purchases/{id}', [RecurringPurchaseController::class, 'show']);
+    Route::patch('/recurring-purchases/{id}', [RecurringPurchaseController::class, 'update']);
+    Route::delete('/recurring-purchases/{id}', [RecurringPurchaseController::class, 'destroy']);
+    Route::post('/recurring-purchases/{id}/pause', [RecurringPurchaseController::class, 'pause']);
+    Route::post('/recurring-purchases/{id}/resume', [RecurringPurchaseController::class, 'resume']);
+    Route::post('/recurring-purchases/{id}/run', [RecurringPurchaseController::class, 'runNow'])->middleware('transaction.pin');
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);

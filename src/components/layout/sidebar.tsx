@@ -30,6 +30,7 @@ import {
   AlertCircle,
   ScrollText,
   BookOpen,
+  CalendarClock,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -77,6 +78,11 @@ const walletItems = [
     label: "Beneficiaries",
     href: "/dashboard/beneficiaries",
     icon: Users,
+  },
+  {
+    label: "Recurring Purchases",
+    href: "/dashboard/recurring",
+    icon: CalendarClock,
   },
 ];
 
