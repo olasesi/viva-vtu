@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { LiveChatWidget } from "@/components/support/live-chat-widget";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryProvider>
           {children}
+          <LiveChatWidget />
           <Toaster position="top-right" richColors />
         </QueryProvider>
       </body>

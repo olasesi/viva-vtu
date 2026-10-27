@@ -299,3 +299,56 @@ it('updates the sms settings group', function () {
         ->assertJsonPath('data.fields.url', 'https://api.twilio.com/sms')
         ->assertJsonPath('data.fields.test_number', '+2348012345678');
 });
+
+it('exposes live chat configuration in public support settings', function () {
+    $this->getJson('/api/settings/public')
+        ->assertOk()
+        ->assertJsonPath('data.support.fields.live_chat_enabled', false)
+        ->assertJsonPath('data.support.fields.live_chat_provider', 'tawkto')
+        ->assertJsonStructure([
+            'data' => [
+                'support' => [
+                    'fields' => [
+                        'live_chat_enabled',
+                        'live_chat_provider',
+                        'live_chat_property_id',
+                        'live_chat_widget_id',
+                    ],
+                ],
+            ],
+        ]);
+});
+
+it('updates the live chat settings group as an admin', function () {
+    $admin = adminUser();
+
+    $this->actingAs($admin, 'api')
+        ->postJson('/api/settings/support', [
+            'fields' => [
+                'live_chat_enabled' => true,
+                'live_chat_provider' => 'crisp',
+                'live_chat_widget_id' => 'a1b2c3d4-0000-1111-2222-333344445555',
+            ],
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.fields.live_chat_enabled', true)
+        ->assertJsonPath('data.fields.live_chat_provider', 'crisp');
+
+    $this->getJson('/api/settings/public')
+        ->assertOk()
+        ->assertJsonPath('data.support.fields.live_chat_enabled', true)
+        ->assertJsonPath('data.support.fields.live_chat_provider', 'crisp');
+});
+
+it('rejects an unsupported live chat provider', function () {
+    $admin = adminUser();
+
+    $this->actingAs($admin, 'api')
+        ->postJson('/api/settings/support', [
+            'fields' => [
+                'live_chat_provider' => 'unknown-provider',
+            ],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['fields.live_chat_provider']);
+});
