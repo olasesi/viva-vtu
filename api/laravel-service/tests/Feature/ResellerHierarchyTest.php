@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\FakeProvider;
 

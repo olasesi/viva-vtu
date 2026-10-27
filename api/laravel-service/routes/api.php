@@ -16,6 +16,7 @@ use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionPinController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -31,19 +32,27 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/fund', [WalletController::class, 'fund']);
         Route::get('/verify/{reference}', [WalletController::class, 'verify']);
         Route::get('/history', [WalletController::class, 'history']);
-        Route::post('/transfer', [WalletController::class, 'transfer']);
+        Route::post('/transfer', [WalletController::class, 'transfer'])->middleware('transaction.pin');
     });
 
-    Route::prefix('purchase')->group(function () {
+    Route::prefix('purchase')->middleware('transaction.pin')->group(function () {
         Route::post('/airtime', [PurchaseController::class, 'buyAirtime']);
         Route::post('/data', [PurchaseController::class, 'buyData']);
         Route::post('/electricity', [PurchaseController::class, 'buyElectricity']);
         Route::post('/cable', [PurchaseController::class, 'buyCable']);
         Route::post('/exam', [PurchaseController::class, 'buyExam']);
         Route::post('/streaming', [PurchaseController::class, 'buyStreaming']);
+    });
+
+    Route::prefix('purchase')->group(function () {
         Route::post('/verify', [PurchaseController::class, 'verify']);
         Route::post('/verify-phone', [PurchaseController::class, 'verifyPhone']);
     });
+
+    Route::get('/transaction-pin', [TransactionPinController::class, 'status']);
+    Route::post('/transaction-pin', [TransactionPinController::class, 'set']);
+    Route::post('/transaction-pin/change', [TransactionPinController::class, 'change']);
+    Route::post('/transaction-pin/remove', [TransactionPinController::class, 'remove']);
 
     Route::prefix('service-requests')->group(function () {
         Route::get('/', [ServiceRequestController::class, 'list']);

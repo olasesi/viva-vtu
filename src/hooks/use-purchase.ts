@@ -4,56 +4,91 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/api";
 import type { AirtimePayload, DataPayload, ElectricityPayload, CableTvPayload } from "@/types";
 import { toast } from "sonner";
+import { useTransactionPinPrompt } from "@/components/transaction-pin/transaction-pin-provider";
+
+const PIN_REQUIRED = "transaction_pin_required";
+
+function isPinRequired(error: any) {
+  return error?.response?.data?.code === PIN_REQUIRED;
+}
 
 export function usePurchase() {
   const queryClient = useQueryClient();
+  const { requestTransactionPin } = useTransactionPinPrompt();
+
+  const withPinRetry = async <T,>(
+    payload: Record<string, any>,
+    call: (data: Record<string, any>) => Promise<T>,
+  ): Promise<T> => {
+    try {
+      return await call(payload);
+    } catch (error) {
+      if (!isPinRequired(error)) {
+        throw error;
+      }
+
+      const pin = await requestTransactionPin();
+
+      if (!pin) {
+        throw Object.assign(new Error("Transaction PIN is required"), {
+          cancelled: true,
+        });
+      }
+
+      return call({ ...payload, transaction_pin: pin });
+    }
+  };
+
+  const handleError = (error: any, fallback: string) => {
+    if (error?.cancelled) {
+      return;
+    }
+
+    toast.error(error?.response?.data?.message || fallback);
+  };
 
   const airtimeMutation = useMutation({
-    mutationFn: (payload: AirtimePayload) => api.buyAirtime(payload),
+    mutationFn: (payload: AirtimePayload) =>
+      withPinRetry(payload as any, (data) => api.buyAirtime(data as AirtimePayload)),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast.success(`Airtime purchase successful! Reference: ${response.data.reference}`);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Airtime purchase failed");
-    },
+    onError: (error: any) => handleError(error, "Airtime purchase failed"),
   });
 
   const dataMutation = useMutation({
-    mutationFn: (payload: DataPayload) => api.buyData(payload),
+    mutationFn: (payload: DataPayload) =>
+      withPinRetry(payload as any, (data) => api.buyData(data as DataPayload)),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast.success(`Data purchase successful! Reference: ${response.data.reference}`);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Data purchase failed");
-    },
+    onError: (error: any) => handleError(error, "Data purchase failed"),
   });
 
   const electricityMutation = useMutation({
-    mutationFn: (payload: ElectricityPayload) => api.buyElectricity(payload),
+    mutationFn: (payload: ElectricityPayload) =>
+      withPinRetry(payload as any, (data) => api.buyElectricity(data as ElectricityPayload)),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast.success(`Electricity payment successful! Reference: ${response.data.reference}`);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Electricity payment failed");
-    },
+    onError: (error: any) => handleError(error, "Electricity payment failed"),
   });
 
   const cableMutation = useMutation({
-    mutationFn: (payload: CableTvPayload) => api.buyCableTv(payload),
+    mutationFn: (payload: CableTvPayload) =>
+      withPinRetry(payload as any, (data) => api.buyCableTv(data as CableTvPayload)),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast.success(`Cable TV subscription successful! Reference: ${response.data.reference}`);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Cable TV subscription failed");
-    },
+    onError: (error: any) => handleError(error, "Cable TV subscription failed"),
   });
 
   const transactionsQuery = useQuery({

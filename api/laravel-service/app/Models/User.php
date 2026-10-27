@@ -30,6 +30,8 @@ class User extends Authenticatable
         'kyc_nin_hash',
         'kyc_nin_last4',
         'kyc_verified_at',
+        'transaction_pin_hash',
+        'transaction_pin_set_at',
     ];
 
     protected $hidden = [
@@ -37,6 +39,7 @@ class User extends Authenticatable
         'remember_token',
         'kyc_bvn_hash',
         'kyc_nin_hash',
+        'transaction_pin_hash',
     ];
 
     protected $casts = [
@@ -46,7 +49,13 @@ class User extends Authenticatable
         'reseller_margin_rate' => 'float',
         'kyc_level' => 'integer',
         'kyc_verified_at' => 'datetime',
+        'transaction_pin_set_at' => 'datetime',
     ];
+
+    public function hasTransactionPin(): bool
+    {
+        return ! empty($this->transaction_pin_hash);
+    }
 
     public function wallet()
     {

@@ -114,6 +114,37 @@ export async function regenerateRecoveryCodes(payload: {
   return data;
 }
 
+export async function getTransactionPinStatus(): Promise<
+  ApiResponse<{ enabled: boolean; set_at: string | null }>
+> {
+  const { data } = await api.get("/api/transaction-pin");
+  return data;
+}
+
+export async function setTransactionPin(payload: {
+  pin: string;
+  pin_confirmation: string;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/transaction-pin", payload);
+  return data;
+}
+
+export async function changeTransactionPin(payload: {
+  current_pin: string;
+  pin: string;
+  pin_confirmation: string;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/transaction-pin/change", payload);
+  return data;
+}
+
+export async function removeTransactionPin(payload: {
+  pin: string;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/transaction-pin/remove", payload);
+  return data;
+}
+
 export async function register(
   payload: RegisterPayload,
 ): Promise<ApiResponse<{ user: User; token: string }>> {

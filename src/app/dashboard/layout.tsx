@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useAuthStore, initializeAuth } from "@/stores/auth-store";
 import { Toaster } from "sonner";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { TransactionPinProvider } from "@/components/transaction-pin/transaction-pin-provider";
 
 export default function DashboardLayout({
   children,
@@ -34,15 +35,17 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-auto">
-        <header className="flex items-center justify-end border-b bg-white px-6 py-3">
-          <NotificationBell />
-        </header>
-        <main className="flex-1 p-6 lg:p-8">{children}</main>
+    <TransactionPinProvider>
+      <div className="min-h-screen flex bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-auto">
+          <header className="flex items-center justify-end border-b bg-white px-6 py-3">
+            <NotificationBell />
+          </header>
+          <main className="flex-1 p-6 lg:p-8">{children}</main>
+        </div>
+        <Toaster position="top-right" richColors />
       </div>
-      <Toaster position="top-right" richColors />
-    </div>
+    </TransactionPinProvider>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { ShieldCheck, ShieldOff, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { TransactionPinCard } from "@/components/transaction-pin/transaction-pin-card";
 
 export default function SecurityPage() {
   const [loading, setLoading] = useState(true);
@@ -106,9 +107,11 @@ export default function SecurityPage() {
       <div>
         <h1 className="text-2xl font-bold">Security</h1>
         <p className="text-muted-foreground">
-          Protect your account with two-factor authentication
+          Protect your account with two-factor authentication and a transaction PIN
         </p>
       </div>
+
+      <TransactionPinCard />
 
       <Card>
         <CardHeader>
