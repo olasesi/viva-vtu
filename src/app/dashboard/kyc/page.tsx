@@ -104,7 +104,7 @@ export default function KycPage() {
         </CardContent>
       </Card>
 
-      {data?.level < 2 && (
+      {typeof data?.level === "number" && data.level < 2 && (
         <Card>
           <CardHeader>
             <CardTitle>Submit KYC Details</CardTitle>

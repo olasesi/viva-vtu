@@ -35,7 +35,7 @@ export default function DisputesPage() {
       <Card>
         <CardHeader>
           <CardTitle>My Disputes</CardTitle>
-          <CardDescription>All disputes you've submitted</CardDescription>
+          <CardDescription>All disputes you&apos;ve submitted</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {disputes.map((dispute) => (

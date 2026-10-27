@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
@@ -52,10 +53,13 @@ export function useAuth() {
     queryKey: ["profile"],
     queryFn: () => api.getProfile(),
     enabled: isAuthenticated,
-    onSuccess: (response) => {
-      setUser(response.data);
-    },
   });
+
+  useEffect(() => {
+    if (profileQuery.data?.data) {
+      setUser(profileQuery.data.data);
+    }
+  }, [profileQuery.data, setUser]);
 
   const logout = () => {
     storeLogout();

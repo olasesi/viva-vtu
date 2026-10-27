@@ -437,7 +437,12 @@ export async function getNotifications(): Promise<ApiResponse<any>> {
   return data;
 }
 
-export async function getUnreadNotificationCount(): Promise<ApiResponse<any>> {
+export interface UnreadNotificationCountResponse {
+  success: boolean;
+  unread_count: number;
+}
+
+export async function getUnreadNotificationCount(): Promise<UnreadNotificationCountResponse> {
   const { data } = await api.get("/api/notifications/unread-count");
   return data;
 }

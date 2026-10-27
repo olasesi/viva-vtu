@@ -30,7 +30,7 @@ export function NotificationBell() {
         getUnreadNotificationCount(),
         getNotifications(),
       ]);
-      setUnread(countRes.unread_count || countRes.data?.unread_count || 0);
+      setUnread(countRes.unread_count ?? 0);
       setNotifications(notifRes.data?.data || notifRes.data || []);
     } catch {}
   };
