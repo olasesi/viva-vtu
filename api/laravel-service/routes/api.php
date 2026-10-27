@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDisputeController;
+use App\Http\Controllers\AdminKnowledgeBaseController;
 use App\Http\Controllers\AdminTicketController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\DisputeController;
+use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PurchaseController;
@@ -26,6 +28,12 @@ use Illuminate\Support\Facades\Route;
 Route::post('/webhook/paystack', [WebhookController::class, 'handlePaystack']);
 Route::post('/webhook/flutterwave', [WebhookController::class, 'handleFlutterwave']);
 Route::post('/webhook/aggregator/{slug}', [WebhookController::class, 'handleAggregator']);
+
+Route::prefix('kb')->group(function () {
+    Route::get('/categories', [KnowledgeBaseController::class, 'categories']);
+    Route::get('/articles', [KnowledgeBaseController::class, 'articles']);
+    Route::get('/articles/{slug}', [KnowledgeBaseController::class, 'show']);
+});
 
 Route::middleware('jwt.verify')->group(function () {
 
@@ -129,6 +137,15 @@ Route::middleware(['jwt.verify', 'admin', 'audit.admin'])->prefix('admin')->grou
     Route::patch('/disputes/{id}', [AdminDisputeController::class, 'update']);
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
     Route::get('/audit-logs/{id}', [AuditLogController::class, 'show']);
+    Route::get('/knowledge-base/categories', [AdminKnowledgeBaseController::class, 'categories']);
+    Route::post('/knowledge-base/categories', [AdminKnowledgeBaseController::class, 'storeCategory']);
+    Route::patch('/knowledge-base/categories/{id}', [AdminKnowledgeBaseController::class, 'updateCategory']);
+    Route::delete('/knowledge-base/categories/{id}', [AdminKnowledgeBaseController::class, 'deleteCategory']);
+    Route::get('/knowledge-base/articles', [AdminKnowledgeBaseController::class, 'articles']);
+    Route::get('/knowledge-base/articles/{id}', [AdminKnowledgeBaseController::class, 'showArticle']);
+    Route::post('/knowledge-base/articles', [AdminKnowledgeBaseController::class, 'storeArticle']);
+    Route::patch('/knowledge-base/articles/{id}', [AdminKnowledgeBaseController::class, 'updateArticle']);
+    Route::delete('/knowledge-base/articles/{id}', [AdminKnowledgeBaseController::class, 'deleteArticle']);
 });
 
 Route::middleware('reseller')->prefix('v1')->group(function () {

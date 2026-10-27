@@ -29,6 +29,7 @@ import {
   MessageSquare,
   AlertCircle,
   ScrollText,
+  BookOpen,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -99,6 +100,11 @@ const bottomItems = [
     label: "Support",
     href: "/dashboard/support",
     icon: MessageSquare,
+  },
+  {
+    label: "Help Center",
+    href: "/dashboard/help",
+    icon: BookOpen,
   },
   {
     label: "Disputes",
@@ -330,6 +336,17 @@ export function Sidebar() {
               >
                 <ScrollText className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Audit Logs</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/knowledge-base"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/dashboard/admin/knowledge-base")
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <BookOpen className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Knowledge Base</span>}
               </Link>
             </div>
           </>

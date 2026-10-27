@@ -551,4 +551,114 @@ export async function getPublicSettings(): Promise<
   return data;
 }
 
+export interface FaqCategoryRecord {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  sort_order: number;
+  is_active: boolean;
+  articles_count?: number;
+}
+
+export interface FaqArticleRecord {
+  id: number;
+  faq_category_id: number;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  views: number;
+  sort_order: number;
+  is_published: boolean;
+  category?: FaqCategoryRecord;
+}
+
+export async function getKnowledgeBaseCategories(): Promise<
+  ApiResponse<FaqCategoryRecord[]>
+> {
+  const { data } = await api.get("/api/kb/categories");
+  return data;
+}
+
+export async function getKnowledgeBaseArticles(params?: {
+  category?: string;
+  search?: string;
+  limit?: number;
+  page?: number;
+  per_page?: number;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/kb/articles", { params });
+  return data;
+}
+
+export async function getKnowledgeBaseArticle(
+  slug: string,
+): Promise<ApiResponse<FaqArticleRecord>> {
+  const { data } = await api.get(`/api/kb/articles/${slug}`);
+  return data;
+}
+
+export async function getAdminFaqCategories(): Promise<
+  ApiResponse<FaqCategoryRecord[]>
+> {
+  const { data } = await api.get("/api/admin/knowledge-base/categories");
+  return data;
+}
+
+export async function createAdminFaqCategory(
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<FaqCategoryRecord>> {
+  const { data } = await api.post("/api/admin/knowledge-base/categories", payload);
+  return data;
+}
+
+export async function updateAdminFaqCategory(
+  id: number,
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<FaqCategoryRecord>> {
+  const { data } = await api.patch(`/api/admin/knowledge-base/categories/${id}`, payload);
+  return data;
+}
+
+export async function deleteAdminFaqCategory(
+  id: number,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.delete(`/api/admin/knowledge-base/categories/${id}`);
+  return data;
+}
+
+export async function getAdminFaqArticles(params?: {
+  faq_category_id?: number;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/admin/knowledge-base/articles", { params });
+  return data;
+}
+
+export async function createAdminFaqArticle(
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<FaqArticleRecord>> {
+  const { data } = await api.post("/api/admin/knowledge-base/articles", payload);
+  return data;
+}
+
+export async function updateAdminFaqArticle(
+  id: number,
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<FaqArticleRecord>> {
+  const { data } = await api.patch(`/api/admin/knowledge-base/articles/${id}`, payload);
+  return data;
+}
+
+export async function deleteAdminFaqArticle(
+  id: number,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.delete(`/api/admin/knowledge-base/articles/${id}`);
+  return data;
+}
+
 export default api;
