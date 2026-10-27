@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditAdminAction;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\RequireTransactionPin;
 use App\Http\Middleware\ResellerAuthenticate;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
             'reseller' => ResellerAuthenticate::class,
             'transaction.pin' => RequireTransactionPin::class,
+            'audit.admin' => AuditAdminAction::class,
         ]);
         $middleware->statefulApi();
     })

@@ -183,6 +183,26 @@ export async function toggleBeneficiaryFavorite(id: number): Promise<ApiResponse
   return data;
 }
 
+export async function getAuditLogs(params?: {
+  page?: number;
+  limit?: number;
+  log_name?: string;
+  event?: string;
+  causer_id?: number;
+  subject_type?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.get("/api/admin/audit-logs", { params });
+  return data;
+}
+
+export async function getAuditLog(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.get(`/api/admin/audit-logs/${id}`);
+  return data;
+}
+
 export async function register(
   payload: RegisterPayload,
 ): Promise<ApiResponse<{ user: User; token: string }>> {

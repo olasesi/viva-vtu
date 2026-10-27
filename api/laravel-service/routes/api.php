@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminTicketController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\KycController;
@@ -104,14 +105,14 @@ Route::middleware('jwt.verify')->group(function () {
 
 Route::get('/settings/public', [SettingController::class, 'publicSettings']);
 
-Route::middleware(['jwt.verify', 'admin'])->prefix('settings')->group(function () {
+Route::middleware(['jwt.verify', 'admin', 'audit.admin'])->prefix('settings')->group(function () {
     Route::get('/', [SettingController::class, 'index']);
     Route::get('/{group}', [SettingController::class, 'show']);
     Route::get('/{group}/schema', [SettingController::class, 'schema']);
     Route::post('/{group}', [SettingController::class, 'update']);
 });
 
-Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['jwt.verify', 'admin', 'audit.admin'])->prefix('admin')->group(function () {
     Route::get('/users', [AdminController::class, 'users']);
     Route::get('/transactions', [AdminController::class, 'transactions']);
     Route::get('/stats', [AdminController::class, 'stats']);
@@ -126,6 +127,8 @@ Route::middleware(['jwt.verify', 'admin'])->prefix('admin')->group(function () {
     Route::get('/disputes', [AdminDisputeController::class, 'index']);
     Route::get('/disputes/{id}', [AdminDisputeController::class, 'show']);
     Route::patch('/disputes/{id}', [AdminDisputeController::class, 'update']);
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    Route::get('/audit-logs/{id}', [AuditLogController::class, 'show']);
 });
 
 Route::middleware('reseller')->prefix('v1')->group(function () {

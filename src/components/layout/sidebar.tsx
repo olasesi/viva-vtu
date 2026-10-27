@@ -28,6 +28,7 @@ import {
   Network,
   MessageSquare,
   AlertCircle,
+  ScrollText,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useWallet } from "@/hooks/use-wallet";
@@ -318,6 +319,17 @@ export function Sidebar() {
               >
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {!collapsed && <span>Disputes</span>}
+              </Link>
+              <Link
+                href="/dashboard/admin/audit-logs"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/dashboard/admin/audit-logs")
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                } ${collapsed ? "justify-center" : ""}`}
+              >
+                <ScrollText className="h-4 w-4 flex-shrink-0" />
+                {!collapsed && <span>Audit Logs</span>}
               </Link>
             </div>
           </>
