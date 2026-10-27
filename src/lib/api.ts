@@ -145,6 +145,44 @@ export async function removeTransactionPin(payload: {
   return data;
 }
 
+export async function getBeneficiaries(params?: { type?: string; search?: string }): Promise<
+  ApiResponse<any[]>
+> {
+  const { data } = await api.get("/api/beneficiaries", { params });
+  return data;
+}
+
+export async function createBeneficiary(payload: {
+  name: string;
+  type: string;
+  identifier: string;
+  bank_code?: string;
+  bank_name?: string;
+  metadata?: Record<string, unknown>;
+  is_favorite?: boolean;
+}): Promise<ApiResponse<any>> {
+  const { data } = await api.post("/api/beneficiaries", payload);
+  return data;
+}
+
+export async function updateBeneficiary(
+  id: number,
+  payload: Record<string, unknown>,
+): Promise<ApiResponse<any>> {
+  const { data } = await api.patch(`/api/beneficiaries/${id}`, payload);
+  return data;
+}
+
+export async function deleteBeneficiary(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.delete(`/api/beneficiaries/${id}`);
+  return data;
+}
+
+export async function toggleBeneficiaryFavorite(id: number): Promise<ApiResponse<any>> {
+  const { data } = await api.post(`/api/beneficiaries/${id}/favorite`);
+  return data;
+}
+
 export async function register(
   payload: RegisterPayload,
 ): Promise<ApiResponse<{ user: User; token: string }>> {

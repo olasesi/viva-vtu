@@ -71,6 +71,11 @@ const walletItems = [
     href: "/dashboard/wallet/history",
     icon: History,
   },
+  {
+    label: "Beneficiaries",
+    href: "/dashboard/beneficiaries",
+    icon: Users,
+  },
 ];
 
 const bottomItems = [

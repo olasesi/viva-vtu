@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminTicketController;
+use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\NotificationController;
@@ -88,6 +89,12 @@ Route::middleware('jwt.verify')->group(function () {
     Route::get('/disputes', [DisputeController::class, 'index']);
     Route::post('/disputes', [DisputeController::class, 'store']);
     Route::get('/disputes/{id}', [DisputeController::class, 'show']);
+
+    Route::get('/beneficiaries', [BeneficiaryController::class, 'index']);
+    Route::post('/beneficiaries', [BeneficiaryController::class, 'store']);
+    Route::patch('/beneficiaries/{id}', [BeneficiaryController::class, 'update']);
+    Route::delete('/beneficiaries/{id}', [BeneficiaryController::class, 'destroy']);
+    Route::post('/beneficiaries/{id}/favorite', [BeneficiaryController::class, 'toggleFavorite']);
 
     Route::get('/transactions', [TransactionController::class, 'history']);
     Route::get('/transactions/status/{reference}', [TransactionController::class, 'statusByReference']);
