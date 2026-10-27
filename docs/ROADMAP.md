@@ -65,6 +65,28 @@ Goal: fund a wallet and top utilities in seconds, any channel.
 - [ ] Asset delivery + auto-scaling (K8s)
 - [ ] Optional betting-funding module (off by default)
 
+## Phase 7 — Trust, Support & Retention (shipped)
+
+Goal: keep customers safe, informed and coming back without manual support effort.
+
+- [x] In-app notifications with transaction status alerts (database notifications + observer)
+- [x] Transaction disputes — user filing, admin review, refund resolution trail
+- [x] TOTP two-factor authentication with hashed single-use recovery codes (auth-service)
+- [x] Transaction PIN with attempt lockout, enforced on transfers, purchases and recurring runs
+- [x] Saved beneficiaries with favourites
+- [x] Admin audit logging with redacted payloads and a searchable viewer
+- [x] Live chat widget (tawk.to / Crisp) configured from admin settings
+- [x] Knowledge base / FAQ with public search and admin category + article management
+- [x] Recurring purchases (daily/weekly/monthly) with retry, auto-pause and run-now
+
+### Operating the Phase 7 features
+
+- Scheduler: `php artisan schedule:run` must run every minute (cron or `schedule:work`) so
+  `recurring:purchases:run` executes due schedules.
+- Queue worker: notifications and requery jobs are queued; run `php artisan queue:work`.
+- Seeding: `php artisan db:seed --class=FaqSeeder` loads the starter knowledge base.
+- Configuration: see `docs/OPERATIONS.md` for recurring purchase, PIN and live chat settings.
+
 ## MVP definition (stakeholder-aligned)
 
 - Deliverable: purchase of **data** end-to-end with wallet flow, receipts, and auto-reversed failures.
